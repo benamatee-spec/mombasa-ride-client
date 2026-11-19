@@ -7,11 +7,8 @@
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#0f172a" />
 
-  <!-- Leaflet CSS & JS for Interactive Map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- Socket.io Client -->
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
   <style>
@@ -20,9 +17,8 @@
       --card-bg: rgba(15, 23, 42, 0.95);
       --card-border: rgba(255, 255, 255, 0.08);
       --accent-green: #10b981;
-      --accent-green-hover: #059669;
-      --accent-blue: #38bdf8;
       --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
     }
@@ -45,10 +41,7 @@
 
     #map {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      inset: 0;
       z-index: 1;
       background: #0f172a;
     }
@@ -57,16 +50,12 @@
       filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(92%);
     }
 
-    /* Top HUD */
     .top-hud {
       position: absolute;
       top: 12px;
       left: 12px;
       right: 12px;
       z-index: 10;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
       pointer-events: none;
     }
 
@@ -105,7 +94,6 @@
       font-weight: 700;
     }
 
-    /* Booking Sheet */
     .booking-sheet {
       position: absolute;
       bottom: 0;
@@ -117,7 +105,7 @@
       backdrop-filter: blur(16px);
       border-top-left-radius: 24px;
       border-top-right-radius: 24px;
-      padding: 16px 16px 26px;
+      padding: 14px 16px 22px;
       box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
     }
 
@@ -126,28 +114,35 @@
       height: 4px;
       background: rgba(255, 255, 255, 0.2);
       border-radius: 4px;
-      margin: 0 auto 14px;
+      margin: 0 auto 12px;
+    }
+
+    .input-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
     }
 
     .input-group {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-bottom: 14px;
+      gap: 8px;
+      margin-bottom: 10px;
     }
 
     .location-input-box {
-      background: rgba(30, 41, 59, 0.7);
+      background: rgba(30, 41, 59, 0.75);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 10px 14px;
+      padding: 9px 12px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .location-input-box span {
-      font-size: 16px;
+      font-size: 14px;
     }
 
     .location-input-box input {
@@ -168,7 +163,7 @@
       gap: 6px;
       overflow-x: auto;
       padding-bottom: 6px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       scrollbar-width: none;
     }
 
@@ -188,11 +183,6 @@
       cursor: pointer;
     }
 
-    .chip:active {
-      background: var(--accent-green);
-      color: #052e16;
-    }
-
     .book-btn {
       width: 100%;
       background: var(--accent-green);
@@ -202,17 +192,10 @@
       border-radius: 14px;
       font-size: 14px;
       font-weight: 800;
-      letter-spacing: 0.5px;
       cursor: pointer;
       box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
-      transition: all 0.2s;
     }
 
-    .book-btn:active {
-      transform: scale(0.98);
-    }
-
-    /* Ride Status Modal */
     .status-modal {
       display: none;
       position: fixed;
@@ -248,29 +231,24 @@
     .status-card p {
       font-size: 13px;
       color: var(--text-muted);
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .driver-assigned-box {
-      background: rgba(15, 23, 42, 0.6);
+      background: rgba(15, 23, 42, 0.72);
       border-radius: 12px;
       padding: 14px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       text-align: left;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
+      font-size: 13px;
     }
 
-    .driver-assigned-box strong {
-      font-size: 14px;
-      color: #fff;
-    }
-
-    .driver-assigned-box span {
-      font-size: 12px;
+    .driver-assigned-box .plate-line {
       color: var(--accent-amber);
-      font-weight: 700;
+      font-weight: 800;
     }
 
     .cancel-btn {
@@ -282,28 +260,37 @@
       font-weight: 700;
       font-size: 13px;
       width: 100%;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-  <!-- Interactive Map -->
   <div id="map"></div>
 
-  <!-- Top Brand HUD -->
   <div class="top-hud">
     <div class="brand-pill">
       <div class="brand-title">
         <h2>Mombasa Ride</h2>
-        <p>🟢 Live Dispatch Ready</p>
+        <p id="conn-label">🟡 Connecting to dispatch...</p>
       </div>
       <div class="promo-badge">0% Commission</div>
     </div>
   </div>
 
-  <!-- Booking Bottom Sheet -->
   <div class="booking-sheet">
     <div class="sheet-handle"></div>
+
+    <div class="input-row-2">
+      <div class="location-input-box">
+        <span>👤</span>
+        <input type="text" id="rider-name" placeholder="Your name" />
+      </div>
+      <div class="location-input-box">
+        <span>📞</span>
+        <input type="tel" id="rider-phone" placeholder="Phone (+254...)" />
+      </div>
+    </div>
 
     <div class="input-group">
       <div class="location-input-box">
@@ -316,7 +303,6 @@
       </div>
     </div>
 
-    <!-- Quick Destination Chips -->
     <div class="quick-destinations">
       <div class="chip" onclick="setDestination('Nyali Centre', -4.0435, 39.7131)">Nyali Centre</div>
       <div class="chip" onclick="setDestination('SGR Miritini', -3.9961, 39.6056)">SGR Miritini</div>
@@ -328,15 +314,17 @@
     <button class="book-btn" onclick="requestRide()">REQUEST RIDE (KES 550)</button>
   </div>
 
-  <!-- Ride Status / Matching Modal -->
   <div class="status-modal" id="status-modal">
     <div class="status-card">
       <h3 id="modal-title">Finding Your Driver...</h3>
       <p id="modal-subtitle">Broadcasting request to nearby Mombasa drivers</p>
 
       <div class="driver-assigned-box" id="driver-details" style="display: none;">
-        <strong>Driver: <span id="assigned-name">Benard</span></strong>
-        <span>Vehicle Plate: <span id="assigned-plate">KDS 396K</span></span>
+        <div><strong>Driver:</strong> <span id="assigned-name">Benard</span></div>
+        <div><strong>Phone:</strong> <span id="assigned-phone">+254 700 000 000</span></div>
+        <div><strong>Vehicle:</strong> <span id="assigned-car">Toyota Fielder</span></div>
+        <div class="plate-line">Plate: <span id="assigned-plate">KDS 396K</span></div>
+        <div><strong>Docs:</strong> <span id="assigned-doc">Verified</span></div>
       </div>
 
       <button class="cancel-btn" onclick="cancelSearch()">Cancel Request</button>
@@ -344,12 +332,15 @@
   </div>
 
   <script>
-    // 1. Initialize Map centered on Mombasa
+    const RIDER_KEY = 'mombasa_ride_rider_v1';
+    try {
+      const savedRider = JSON.parse(localStorage.getItem(RIDER_KEY) || '{}');
+      if (savedRider.name) document.getElementById('rider-name').value = savedRider.name;
+      if (savedRider.phone) document.getElementById('rider-phone').value = savedRider.phone;
+    } catch {}
+
     const mombasaCenter = [-4.0435, 39.6682];
-    const map = L.map('map', {
-      zoomControl: false,
-      attributionControl: false
-    }).setView(mombasaCenter, 13);
+    const map = L.map('map', { zoomControl: false, attributionControl: false }).setView(mombasaCenter, 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
@@ -361,20 +352,43 @@
       map.flyTo([lat, lng], 14);
     }
 
-    // 2. Connect to Shared Render Socket.io Server
     const SERVER_URL = "https://mombasa-ride-server.onrender.com";
     const socket = io(SERVER_URL, {
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000
+    });
+
+    const connLabel = document.getElementById('conn-label');
+    socket.on('connect', () => {
+      connLabel.textContent = '🟢 Live Dispatch Ready';
+      connLabel.style.color = '#10b981';
+    });
+
+    socket.on('disconnect', () => {
+      connLabel.textContent = '🔴 Reconnecting...';
+      connLabel.style.color = '#ef4444';
     });
 
     let currentRideId = null;
 
     function requestRide() {
-      const pickup = document.getElementById('pickup-input').value;
-      const dropoff = document.getElementById('dropoff-input').value;
+      const riderName = document.getElementById('rider-name').value.trim();
+      const riderPhone = document.getElementById('rider-phone').value.trim();
+      const pickup = document.getElementById('pickup-input').value.trim();
+      const dropoff = document.getElementById('dropoff-input').value.trim();
 
       if (!dropoff) {
         alert('Please enter a destination.');
+        return;
+      }
+
+      localStorage.setItem(RIDER_KEY, JSON.stringify({ name: riderName, phone: riderPhone }));
+
+      if (!socket.connected) {
+        alert('Connecting to server... please wait a moment and tap Request Ride again.');
+        socket.connect();
         return;
       }
 
@@ -384,22 +398,25 @@
       document.getElementById('modal-subtitle').textContent = 'Broadcasting to nearby drivers in Mombasa';
       document.getElementById('driver-details').style.display = 'none';
 
-      // Emit ride request to backend server
       socket.emit('new_ride_request', {
         rideId: currentRideId,
-        pickup: pickup,
+        passengerName: riderName || 'Guest Rider',
+        passengerPhone: riderPhone || 'Not provided',
+        pickup: pickup || 'Mombasa CBD',
         dropoff: dropoff,
         fare: 550
       });
     }
 
-    // Listen for driver acceptance
     socket.on('ride_accepted', (data) => {
       if (data.rideId === currentRideId) {
         document.getElementById('modal-title').textContent = 'Driver Assigned! 🎉';
         document.getElementById('modal-subtitle').textContent = 'Your driver is heading to your pickup location.';
         document.getElementById('assigned-name').textContent = data.driverName || 'Benard';
+        document.getElementById('assigned-phone').textContent = data.driverPhone || 'Not provided';
+        document.getElementById('assigned-car').textContent = data.carModel || 'Vehicle';
         document.getElementById('assigned-plate').textContent = data.plate || 'KDS 396K';
+        document.getElementById('assigned-doc').textContent = data.docRef || 'Verified';
         document.getElementById('driver-details').style.display = 'flex';
       }
     });
