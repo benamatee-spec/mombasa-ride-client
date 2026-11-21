@@ -79,6 +79,7 @@
 
     #map {
       flex: 1;
+      min-height: 180px;
       width: 100%;
       z-index: 1;
     }
@@ -419,34 +420,8 @@
     let calculatedFareNum = 250;
     let calculatedDistanceKm = 1.0;
     let activeRideId = null;
-
-    const map = L.map('map', { zoomControl: true }).setView(MOMBASA_CENTER, 13);
-
-    const wikimediaTiles = L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
-      attribution: '&copy; Wikimedia maps &copy; OpenStreetMap contributors',
-      maxZoom: 19
-    });
-
-    const brightTiles = L.tileLayer('https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap France &copy; OpenStreetMap contributors',
-      maxZoom: 20
-    });
-
-    brightTiles.on('tileerror', () => {
-      if (!map.hasLayer(wikimediaTiles)) {
-        map.addLayer(wikimediaTiles);
-      }
-    });
-
-    brightTiles.addTo(map);
-
-    const pickupMarker = L.circleMarker(MOMBASA_CENTER, {
-      radius: 9,
-      color: '#ffffff',
-      weight: 3,
-      fillColor: '#3b82f6',
-      fillOpacity: 1
-    }).addTo(map);
+    let map = null;
+    let pickupMarker = null;
 
     function haversineKm(lat1, lon1, lat2, lon2) {
       const toRad = (d) => (d * Math.PI) / 180;
@@ -464,12 +439,12 @@
       if (key === 'current') {
         return { lat: liveCoords.lat, lng: liveCoords.lng, label: 'Current Mombasa Location' };
       }
-      return HUBS[key];
+      return HUBS[key] || { lat: MOMBASA_CENTER[0], lng: MOMBASA_CENTER[1], label: 'Mombasa CBD' };
     }
 
     function getDropoffCoordAndLabel() {
       const key = document.getElementById('dropoff-select').value;
-      return HUBS[key];
+      return HUBS[key] || HUBS.nyali;
     }
 
     function getSurgeMultiplier(lat, lng) {
@@ -516,8 +491,10 @@
 
     function syncPickupPin(fly = false) {
       const p = getPickupCoordAndLabel();
-      pickupMarker.setLatLng([p.lat, p.lng]);
-      if (fly) {
+      if (pickupMarker) {
+        pickupMarker.setLatLng([p.lat, p.lng]);
+      }
+      if (fly && map) {
         map.flyTo([p.lat, p.lng], 13);
       }
       recalculateLiveFare();
@@ -533,6 +510,41 @@
         btn.classList.toggle('active', btn.dataset.class === cls);
       });
       recalculateLiveFare();
+    }
+
+    recalculateLiveFare();
+      try {
+      if (typeof L !== 'undefined') {
+        map = L.map('map', { zoomControl: true }).setView(MOMBASA_CENTER, 13);
+
+        const wikimediaTiles = L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
+          attribution: '&copy; Wikimedia maps &copy; OpenStreetMap contributors',
+          maxZoom: 19
+        });
+
+        const brightTiles = L.tileLayer('https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap France &copy; OpenStreetMap contributors',
+          maxZoom: 20
+        });
+
+        brightTiles.on('tileerror', () => {
+          if (map && !map.hasLayer(wikimediaTiles)) {
+            map.addLayer(wikimediaTiles);
+          }
+        });
+
+        brightTiles.addTo(map);
+
+        pickupMarker = L.circleMarker(MOMBASA_CENTER, {
+          radius: 9,
+          color: '#ffffff',
+          weight: 3,
+          fillColor: '#3b82f6',
+          fillOpacity: 1
+        }).addTo(map);
+      }
+    } catch (err) {
+      console.error('Map init error:', err);
     }
 
     function repositionGPS() {
@@ -593,17 +605,49 @@
       }
     }
 
-    const socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
+    let socket = null;
+    try {
+      if (typeof io !== 'undefined') {
+        socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
 
-    socket.on('connect', () => {
-      document.getElementById('conn-dot').classList.add('connected');
-      document.getElementById('conn-text').textContent = 'Connected';
-    });
+        socket.on('connect', () => {
+          document.getElementById('conn-dot').classList.add('connected');
+          document.getElementById('conn-text').textContent = 'Connected';
+        });
 
-    socket.on('disconnect', () => {
-      document.getElementById('conn-dot').classList.remove('connected');
-      document.getElementById('conn-text').textContent = 'Reconnecting...';
-    });
+        socket.on('disconnect', () => {
+          document.getElementById('conn-dot').classList.remove('connected');
+          document.getElementById('conn-text').textContent = 'Reconnecting...';
+        });
+
+        socket.on('ride_accepted', (data) => {
+          if (!data) return;
+          if (activeRideId && data.rideId && data.rideId !== activeRideId) return;
+          document.getElementById('booking-status').textContent = 'Driver accepted your ride!';
+          const card = document.getElementById('matched-driver-card');
+          card.classList.add('visible');
+          if (data.driverPhoto) {
+            document.getElementById('matched-driver-img').src = data.driverPhoto;
+          }
+          document.getElementById('matched-driver-name').textContent =
+            `${data.driverName || 'Driver'} • ${data.plate || ''}`;
+          document.getElementById('matched-driver-vehicle').textContent =
+            `${data.carModel || selectedClass} (${data.carColor || ''})`;
+          document.getElementById('matched-driver-phone').textContent = data.driverPhone || '';
+        });
+
+        function handleDriverCancellation(data = {}) {
+          if (activeRideId && data.rideId && data.rideId !== activeRideId) return;
+          clearRideUI(data.reason || 'Driver cancelled the trip. You can request a new ride.');
+        }
+
+        socket.on('ride_cancelled_by_driver', handleDriverCancellation);
+        socket.on('driver_cancel_ride', handleDriverCancellation);
+        socket.on('ride_cancelled', handleDriverCancellation);
+      }
+    } catch (err) {
+      console.error('Socket init error:', err);
+    }
 
     function requestRide() {
       recalculateLiveFare();
@@ -626,7 +670,7 @@
         fare: calculatedFareNum > 0 ? calculatedFareNum : 'NEW'
       };
 
-      if (socket.connected) {
+      if (socket && socket.connected) {
         socket.emit('new_ride_request', payload);
         setActiveRideUI(
           rideId,
@@ -642,37 +686,11 @@
         clearRideUI('');
         return;
       }
-      if (socket.connected) {
+      if (socket && socket.connected) {
         socket.emit('rider_cancel_ride', { rideId: activeRideId });
       }
       clearRideUI('Ride request cancelled.');
     }
-
-    socket.on('ride_accepted', (data) => {
-      if (!data) return;
-      if (activeRideId && data.rideId && data.rideId !== activeRideId) return;
-      document.getElementById('booking-status').textContent = 'Driver accepted your rideconst card = document.getElementById('matched-driver-card');
-      card.classList.add('visible');
-      if (data.driverPhoto) {
-        document.getElementById('matched-driver-img').src = data.driverPhoto;
-      }
-      document.getElementById('matched-driver-name').textContent =
-        `${data.driverName || 'Driver'} • ${data.plate || ''}`;
-      document.getElementById('matched-driver-vehicle').textContent =
-        `${data.carModel || selectedClass} (${data.carColor || ''})`;
-      document.getElementById('matched-driver-phone').textContent = data.driverPhone || '';
-    });
-
-    function handleDriverCancellation(data = {}) {
-      if (activeRideId && data.rideId && data.rideId !== activeRideId) return;
-      clearRideUI(data.reason || 'Driver cancelled the trip. You can request a new ride.');
-    }
-
-    socket.on('ride_cancelled_by_driver', handleDriverCancellation);
-    socket.on('driver_cancel_ride', handleDriverCancellation);
-    socket.on('ride_cancelled', handleDriverCancellation);
-
-    recalculateLiveFare();
   </script>
 </body>
 </html>
