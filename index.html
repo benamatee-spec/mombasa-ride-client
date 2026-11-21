@@ -3,428 +3,676 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Mombasa Ride - Book Your Ride</title>
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#0f172a" />
-
+  <title>Mombasa Ride — Client App</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <style>
     :root {
-      --bg-dark: #0b1120;
-      --card-bg: rgba(15, 23, 42, 0.95);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --accent-green: #10b981;
-      --accent-amber: #f59e0b;
-      --accent-red: #ef4444;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
+      --bg: #0f172a;
+      --panel: #111827;
+      --card: #1f2937;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --green: #10b981;
+      --blue: #3b82f6;
+      --amber: #f59e0b;
+      --red: #ef4444;
     }
 
     * {
       box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       -webkit-tap-highlight-color: transparent;
     }
 
-    body, html {
-      height: 100%;
-      width: 100%;
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
-      background-color: var(--bg-dark);
-      color: var(--text-main);
+    }
+
+    .topbar {
+      position: relative;
+      z-index: 500;
+      background: rgba(15, 23, 42, 0.96);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .brand {
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .conn-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 999px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--red);
+    }
+
+    .dot.connected {
+      background: var(--green);
     }
 
     #map {
-      position: absolute;
-      inset: 0;
+      flex: 1;
+      width: 100%;
       z-index: 1;
-      background: #0f172a;
-    }
-
-    .dark-map-tiles {
-      filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(92%);
-    }
-
-    .top-hud {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      right: 12px;
-      z-index: 10;
-      pointer-events: none;
-    }
-
-    .brand-pill {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(12px);
-      border-radius: 14px;
-      padding: 10px 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      pointer-events: auto;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-    }
-
-    .brand-title h2 {
-      font-size: 14px;
-      font-weight: 800;
-      color: #fff;
-    }
-
-    .brand-title p {
-      font-size: 10px;
-      color: var(--accent-green);
-      font-weight: 600;
-    }
-
-    .promo-badge {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--accent-green);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      font-size: 10px;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-weight: 700;
     }
 
     .booking-sheet {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 10;
-      background: var(--card-bg);
-      border-top: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
-      border-top-left-radius: 24px;
-      border-top-right-radius: 24px;
-      padding: 14px 16px 22px;
-      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
+      position: relative;
+      z-index: 500;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+      padding: 12px 14px 16px;
+      max-height: 60dvh;
+      overflow-y: auto;
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
     }
 
-    .sheet-handle {
+    .handle {
       width: 40px;
       height: 4px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-      margin: 0 auto 12px;
+      border-radius: 999px;
+      background: #475569;
+      margin: 0 auto 10px;
     }
 
-    .input-row-2 {
+    .gps-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .link-btn {
+      background: none;
+      border: none;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 0;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .row-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
       margin-bottom: 8px;
     }
 
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+    .field label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+
+    .fleet-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
       margin-bottom: 10px;
     }
 
-    .location-input-box {
-      background: rgba(30, 41, 59, 0.75);
-      border: 1px solid var(--card-border);
+    .fleet-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 6px;
+      text-align: left;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .fleet-btn.active {
+      border-color: var(--green);
+      background: rgba(16, 185, 129, 0.14);
+    }
+
+    .fleet-name {
+      font-size: 12px;
+      font-weight: 800;
+      display: block;
+    }
+
+    .fleet-min {
+      font-size: 11px;
+      color: var(--muted);
+      display: block;
+      margin-top: 2px;
+    }
+
+    .fare-bar {
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 9px 12px;
+      padding: 10px 12px;
       display: flex;
+      justify-content: space-between;
       align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .fare-meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .fare-total {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--green);
+    }
+
+    .action-row {
+      display: flex;
       gap: 8px;
     }
 
-    .location-input-box span {
-      font-size: 14px;
-    }
-
-    .location-input-box input {
-      background: transparent;
-      border: none;
-      color: #fff;
-      font-size: 13px;
-      width: 100%;
-      outline: none;
-    }
-
-    .location-input-box input::placeholder {
-      color: var(--text-muted);
-    }
-
-    .quick-destinations {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 6px;
-      margin-bottom: 12px;
-      scrollbar-width: none;
-    }
-
-    .quick-destinations::-webkit-scrollbar {
-      display: none;
-    }
-
-    .chip {
-      background: rgba(30, 41, 59, 0.9);
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-      cursor: pointer;
-    }
-
     .book-btn {
-      width: 100%;
-      background: var(--accent-green);
-      color: #052e16;
+      flex: 1;
+      background: var(--green);
+      color: #fff;
       border: none;
-      padding: 14px;
-      border-radius: 14px;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .book-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    #cancel-ride-btn {
+      display: none;
+      background: var(--red);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
       font-size: 14px;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
     }
 
-    .status-modal {
+    #cancel-ride-btn.visible {
+      display: inline-block;
+    }
+
+    .status-banner {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--amber);
+      min-height: 16px;
+    }
+
+    .driver-card {
       display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 50;
-      background: rgba(2, 6, 23, 0.85);
-      backdrop-filter: blur(8px);
-      align-items: flex-end;
-      padding: 16px;
+      margin-top: 10px;
+      background: var(--card);
+      border: 1px solid var(--green);
+      border-radius: 12px;
+      padding: 10px;
+      gap: 10px;
+      align-items: center;
     }
 
-    .status-modal.active {
+    .driver-card.visible {
       display: flex;
     }
 
-    .status-card {
-      width: 100%;
-      background: #1e293b;
-      border: 1px solid var(--card-border);
-      border-radius: 22px;
-      padding: 20px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
-      text-align: center;
-    }
-
-    .status-card h3 {
-      font-size: 18px;
-      font-weight: 800;
-      margin-bottom: 6px;
-      color: var(--accent-green);
-    }
-
-    .status-card p {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 14px;
-    }
-
-    .driver-assigned-box {
-      background: rgba(15, 23, 42, 0.72);
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 14px;
-      text-align: left;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      font-size: 13px;
-    }
-
-    .driver-assigned-box .plate-line {
-      color: var(--accent-amber);
-      font-weight: 800;
-    }
-
-    .cancel-btn {
-      background: #334155;
-      color: #fff;
-      border: none;
-      padding: 12px;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 13px;
-      width: 100%;
-      cursor: pointer;
+    .driver-card img {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--green);
+      flex-shrink: 0;
     }
   </style>
 </head>
 <body>
+  <header class="topbar">
+    <div class="brand">Mombasa Ride</div>
+    <div class="conn-pill">
+      <span class="dot" id="conn-dot"></span>
+      <span id="conn-text">Connecting...</span>
+    </div>
+  </header>
 
   <div id="map"></div>
 
-  <div class="top-hud">
-    <div class="brand-pill">
-      <div class="brand-title">
-        <h2>Mombasa Ride</h2>
-        <p id="conn-label">🟡 Connecting to dispatch...</p>
-      </div>
-      <div class="promo-badge">0% Commission</div>
+  <section class="booking-sheet">
+    <div class="handle"></div>
+
+    <div class="gps-line">
+      <span id="gps-status">Locating in Mombasa...</span>
+      <button type="button" class="link-btn" onclick="repositionGPS()">Reposition GPS</button>
     </div>
-  </div>
 
-  <div class="booking-sheet">
-    <div class="sheet-handle"></div>
-
-    <div class="input-row-2">
-      <div class="location-input-box">
-        <span>👤</span>
-        <input type="text" id="rider-name" placeholder="Your name" />
+    <div class="row-2">
+      <div class="field">
+        <label for="rider-name">Your Name</label>
+        <input type="text" id="rider-name" value="Guest Rider" />
       </div>
-      <div class="location-input-box">
-        <span>📞</span>
-        <input type="tel" id="rider-phone" placeholder="Phone (+254...)" />
+      <div class="field">
+        <label for="rider-phone">Phone (Optional)</label>
+        <input type="tel" id="rider-phone" placeholder="+2547..." />
       </div>
     </div>
 
-    <div class="input-group">
-      <div class="location-input-box">
-        <span>🟢</span>
-        <input type="text" id="pickup-input" value="Moi International Airport" placeholder="Pickup location..." />
+    <div class="row-2">
+      <div class="field">
+        <label for="pickup-select">Pickup Hub</label>
+        <select id="pickup-select" onchange="onRouteChange()">
+          <option value="current">Current Live GPS</option>
+          <option value="airport">Moi International Airport</option>
+          <option value="nyali">Nyali Centre</option>
+          <option value="sgr">SGR Miritini Station</option>
+          <option value="likoni">Likoni Ferry</option>
+          <option value="cbd">Mombasa CBD / Mwembe Tayari</option>
+          <option value="bamburi">Bamburi Beach</option>
+        </select>
       </div>
-      <div class="location-input-box">
-        <span>📍</span>
-        <input type="text" id="dropoff-input" placeholder="Where to in Mombasa? (e.g. Nyali Centre)" />
+      <div class="field">
+        <label for="dropoff-select">Drop-off Hub</label>
+        <select id="dropoff-select" onchange="onRouteChange()">
+          <option value="nyali">Nyali Centre</option>
+          <option value="airport">Moi International Airport</option>
+          <option value="sgr">SGR Miritini Station</option>
+          <option value="likoni">Likoni Ferry</option>
+          <option value="cbd">Mombasa CBD / Mwembe Tayari</option>
+          <option value="bamburi">Bamburi Beach</option>
+        </select>
       </div>
     </div>
 
-    <div class="quick-destinations">
-      <div class="chip" onclick="setDestination('Nyali Centre', -4.0435, 39.7131)">Nyali Centre</div>
-      <div class="chip" onclick="setDestination('SGR Miritini', -3.9961, 39.6056)">SGR Miritini</div>
-      <div class="chip" onclick="setDestination('Likoni Ferry', -4.0792, 39.6656)">Likoni Ferry</div>
-      <div class="chip" onclick="setDestination('Bamburi', -3.9845, 39.7321)">Bamburi</div>
-      <div class="chip" onclick="setDestination('Mombasa CBD', -4.0434, 39.6682)">Mombasa CBD</div>
+    <div class="fleet-grid" id="fleet-grid">
+      <button type="button" class="fleet-btn" data-class="Boda" onclick="selectFleet('Boda')">
+        <span class="fleet-name">Boda</span>
+        <span class="fleet-min">Min KES 150</span>
+      </button>
+      <button type="button" class="fleet-btn" data-class="Tukutuku" onclick="selectFleet('Tukutuku')">
+        <span class="fleet-name">Tukutuku</span>
+        <span class="fleet-min">Min KES 200</span>
+      </button>
+      <button type="button" class="fleet-btn active" data-class="Standard Vehicle" onclick="selectFleet('Standard Vehicle')">
+        <span class="fleet-name">Standard</span>
+        <span class="fleet-min">Min KES 250</span>
+      </button>
+      <button type="button" class="fleet-btn" data-class="Comfort Class" onclick="selectFleet('Comfort Class')">
+        <span class="fleet-name">Comfort</span>
+        <span class="fleet-min">Min KES 350</span>
+      </button>
+      <button type="button" class="fleet-btn" data-class="XL" onclick="selectFleet('XL')">
+        <span class="fleet-name">XL</span>
+        <span class="fleet-min">Min KES 400</span>
+      </button>
+      <button type="button" class="fleet-btn" data-class="VIP Class" onclick="selectFleet('VIP Class')">
+        <span class="fleet-name">VIP Class</span>
+        <span class="fleet-min">NEW</span>
+      </button>
     </div>
 
-    <button class="book-btn" onclick="requestRide()">REQUEST RIDE (KES 550)</button>
-  </div>
-
-  <div class="status-modal" id="status-modal">
-    <div class="status-card">
-      <h3 id="modal-title">Finding Your Driver...</h3>
-      <p id="modal-subtitle">Broadcasting request to nearby Mombasa drivers</p>
-
-      <div class="driver-assigned-box" id="driver-details" style="display: none;">
-        <div><strong>Driver:</strong> <span id="assigned-name">Benard</span></div>
-        <div><strong>Phone:</strong> <span id="assigned-phone">+254 700 000 000</span></div>
-        <div><strong>Vehicle:</strong> <span id="assigned-car">Toyota Fielder</span></div>
-        <div class="plate-line">Plate: <span id="assigned-plate">KDS 396K</span></div>
-        <div><strong>Docs:</strong> <span id="assigned-doc">Verified</span></div>
+    <div class="fare-bar">
+      <div>
+        <div style="font-size:13px;font-weight:700;" id="fare-class-label">Standard Vehicle</div>
+        <div class="fare-meta" id="fare-detail-label">Calculating live route...</div>
       </div>
-
-      <button class="cancel-btn" onclick="cancelSearch()">Cancel Request</button>
+      <div class="fare-total" id="live-fare-display">KES 250</div>
     </div>
-  </div>
+
+    <div class="action-row">
+      <button type="button" class="book-btn" id="book-btn" onclick="requestRide()">Request Ride</button>
+      <button type="button" id="cancel-ride-btn" onclick="cancelActiveRide()">Cancel</button>
+    </div>
+
+    <div class="status-banner" id="booking-status"></div>
+
+    <div class="driver-card" id="matched-driver-card">
+      <img id="matched-driver-img" src="" alt="Driver" />
+      <div style="font-size:13px;line-height:1.4;">
+        <div style="font-weight:800;color:#10b981;" id="matched-driver-name">Driver Matched</div>
+        <div id="matched-driver-vehicle"></div>
+        <div id="matched-driver-phone" style="color:#94a3b8;"></div>
+      </div>
+    </div>
+  </section>
 
   <script>
-    const RIDER_KEY = 'mombasa_ride_rider_v1';
-    try {
-      const savedRider = JSON.parse(localStorage.getItem(RIDER_KEY) || '{}');
-      if (savedRider.name) document.getElementById('rider-name').value = savedRider.name;
-      if (savedRider.phone) document.getElementById('rider-phone').value = savedRider.phone;
-    } catch {}
+    const SERVER_URL = 'https://mombasa-ride-server.onrender.com';
+    const MOMBASA_CENTER = [-4.0435, 39.6682];
 
-    const mombasaCenter = [-4.0435, 39.6682];
-    const map = L.map('map', { zoomControl: false, attributionControl: false }).setView(mombasaCenter, 13);
+    const HUBS = {
+      airport: { label: 'Moi International Airport', lat: -4.0348, lng: 39.5942 },
+      nyali: { label: 'Nyali Centre', lat: -4.0197, lng: 39.6876 },
+      sgr: { label: 'SGR Miritini Station', lat: -3.9912, lng: 39.5895 },
+      likoni: { label: 'Likoni Ferry', lat: -4.0844, lng: 39.6606 },
+      cbd: { label: 'Mombasa CBD / Mwembe Tayari', lat: -4.0547, lng: 39.6636 },
+      bamburi: { label: 'Bamburi Beach', lat: -3.9826, lng: 39.7285 }
+    };
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      className: 'dark-map-tiles'
-    }).addTo(map);
+    const FLEET_CONFIG = {
+      'Boda': { minFare: 150, base: 60, perKm: 25, isNew: false },
+      'Tukutuku': { minFare: 200, base: 80, perKm: 32, isNew: false },
+      'Standard Vehicle': { minFare: 250, base: 110, perKm: 45, isNew: false },
+      'Comfort Class': { minFare: 350, base: 150, perKm: 58, isNew: false },
+      'XL': { minFare: 400, base: 180, perKm: 70, isNew: false },
+      'VIP Class': { minFare: null, base: null, perKm: null, isNew: true }
+    };
 
-    function setDestination(name, lat, lng) {
-      document.getElementById('dropoff-input').value = name;
-      map.flyTo([lat, lng], 14);
-    }
+    const SURGE_ZONES = [
+      { name: 'Nyali Bridge', lat: -4.0325, lng: 39.6775, mult: 1.4 },
+      { name: 'MBA Airport', lat: -4.0348, lng: 39.5942, mult: 1.3 },
+      { name: 'SGR Miritini', lat: -3.9912, lng: 39.5895, mult: 1.5 },
+      { name: 'Likoni Ferry', lat: -4.0844, lng: 39.6606, mult: 1.2 }
+    ];
 
-    const SERVER_URL = "https://mombasa-ride-server.onrender.com";
-    const socket = io(SERVER_URL, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000
+    let selectedClass = 'Standard Vehicle';
+    let liveCoords = { lat: MOMBASA_CENTER[0], lng: MOMBASA_CENTER[1] };
+    let calculatedFareNum = 250;
+    let calculatedDistanceKm = 1.0;
+    let activeRideId = null;
+
+    const map = L.map('map', { zoomControl: true }).setView(MOMBASA_CENTER, 13);
+
+    const wikimediaTiles = L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
+      attribution: '&copy; Wikimedia maps &copy; OpenStreetMap contributors',
+      maxZoom: 19
     });
 
-    const connLabel = document.getElementById('conn-label');
+    const brightTiles = L.tileLayer('https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap France &copy; OpenStreetMap contributors',
+      maxZoom: 20
+    });
+
+    brightTiles.on('tileerror', () => {
+      if (!map.hasLayer(wikimediaTiles)) {
+        map.addLayer(wikimediaTiles);
+      }
+    });
+
+    brightTiles.addTo(map);
+
+    const pickupMarker = L.circleMarker(MOMBASA_CENTER, {
+      radius: 9,
+      color: '#ffffff',
+      weight: 3,
+      fillColor: '#3b82f6',
+      fillOpacity: 1
+    }).addTo(map);
+
+    function haversineKm(lat1, lon1, lat2, lon2) {
+      const toRad = (d) => (d * Math.PI) / 180;
+      const R = 6371;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function getPickupCoordAndLabel() {
+      const key = document.getElementById('pickup-select').value;
+      if (key === 'current') {
+        return { lat: liveCoords.lat, lng: liveCoords.lng, label: 'Current Mombasa Location' };
+      }
+      return HUBS[key];
+    }
+
+    function getDropoffCoordAndLabel() {
+      const key = document.getElementById('dropoff-select').value;
+      return HUBS[key];
+    }
+
+    function getSurgeMultiplier(lat, lng) {
+      let best = { mult: 1.0, zone: null };
+      for (const z of SURGE_ZONES) {
+        const d = haversineKm(lat, lng, z.lat, z.lng);
+        if (d <= 2.2 && z.mult > best.mult) {
+          best = { mult: z.mult, zone: z.name };
+        }
+      }
+      return best;
+    }
+
+    function recalculateLiveFare() {
+      const p = getPickupCoordAndLabel();
+      const d = getDropoffCoordAndLabel();
+      const cfg = FLEET_CONFIG[selectedClass] || FLEET_CONFIG['Standard Vehicle'];
+
+      const straightKm = haversineKm(p.lat, p.lng, d.lat, d.lng);
+      const roadKm = Math.max(1.0, Number((straightKm * 1.3).toFixed(1)));
+      calculatedDistanceKm = roadKm;
+
+      const surge = getSurgeMultiplier(p.lat, p.lng);
+      document.getElementById('fare-class-label').textContent = selectedClass;
+
+      if (cfg.isNew) {
+        calculatedFareNum = 0;
+        document.getElementById('live-fare-display').textContent = 'NEW';
+        document.getElementById('fare-detail-label').textContent =
+          `~${roadKm} km • VIP pricing coming soon`;
+        return;
+      }
+
+      const rawFare = cfg.base + roadKm * cfg.perKm;
+      const withFloor = Math.max(cfg.minFare, rawFare);
+      const finalFare = Math.round((withFloor * surge.mult) / 10) * 10;
+      calculatedFareNum = finalFare;
+
+      document.getElementById('live-fare-display').textContent = `KES ${finalFare.toLocaleString()}`;
+      document.getElementById('fare-detail-label').textContent = surge.zone
+        ? `~${roadKm} km • ${surge.zone} ${surge.mult}x surge`
+        : `~${roadKm} km • Min KES ${cfg.minFare}`;
+    }
+
+    function syncPickupPin(fly = false) {
+      const p = getPickupCoordAndLabel();
+      pickupMarker.setLatLng([p.lat, p.lng]);
+      if (fly) {
+        map.flyTo([p.lat, p.lng], 13);
+      }
+      recalculateLiveFare();
+    }
+
+    function onRouteChange() {
+      syncPickupPin(true);
+    }
+
+    function selectFleet(cls) {
+      selectedClass = cls;
+      document.querySelectorAll('.fleet-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.class === cls);
+      });
+      recalculateLiveFare();
+    }
+
+    function repositionGPS() {
+      if (!navigator.geolocation) {
+        document.getElementById('gps-status').textContent = 'GPS unavailable — Mombasa center';
+        syncPickupPin(true);
+        return;
+      }
+      document.getElementById('gps-status').textContent = 'Updating live GPS...';
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          liveCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          document.getElementById('gps-status').textContent =
+            `Live GPS: ${liveCoords.lat.toFixed(4)}, ${liveCoords.lng.toFixed(4)}`;
+          syncPickupPin(true);
+        },
+        () => {
+          document.getElementById('gps-status').textContent = 'GPS permission denied — Mombasa center';
+          syncPickupPin(true);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+      );
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition(
+        (pos) => {
+          liveCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          document.getElementById('gps-status').textContent =
+            `Live GPS: ${liveCoords.lat.toFixed(4)}, ${liveCoords.lng.toFixed(4)}`;
+          if (document.getElementById('pickup-select').value === 'current') {
+            syncPickupPin(false);
+          }
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+      );
+    }
+
+    function setActiveRideUI(rideId, statusText) {
+      activeRideId = rideId;
+      document.getElementById('book-btn').disabled = true;
+      const cancelBtn = document.getElementById('cancel-ride-btn');
+      cancelBtn.classList.add('visible');
+      cancelBtn.disabled = false;
+      document.getElementById('booking-status').textContent = statusText;
+    }
+
+    function clearRideUI(statusText = '') {
+      activeRideId = null;
+      document.getElementById('book-btn').disabled = false;
+      const cancelBtn = document.getElementById('cancel-ride-btn');
+      cancelBtn.classList.remove('visible');
+      cancelBtn.disabled = true;
+      document.getElementById('matched-driver-card').classList.remove('visible');
+      if (statusText) {
+        document.getElementById('booking-status').textContent = statusText;
+      }
+    }
+
+    const socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
+
     socket.on('connect', () => {
-      connLabel.textContent = '🟢 Live Dispatch Ready';
-      connLabel.style.color = '#10b981';
+      document.getElementById('conn-dot').classList.add('connected');
+      document.getElementById('conn-text').textContent = 'Connected';
     });
 
     socket.on('disconnect', () => {
-      connLabel.textContent = '🔴 Reconnecting...';
-      connLabel.style.color = '#ef4444';
+      document.getElementById('conn-dot').classList.remove('connected');
+      document.getElementById('conn-text').textContent = 'Reconnecting...';
     });
 
-    let currentRideId = null;
-
     function requestRide() {
-      const riderName = document.getElementById('rider-name').value.trim();
-      const riderPhone = document.getElementById('rider-phone').value.trim();
-      const pickup = document.getElementById('pickup-input').value.trim();
-      const dropoff = document.getElementById('dropoff-input').value.trim();
+      recalculateLiveFare();
+      const p = getPickupCoordAndLabel();
+      const d = getDropoffCoordAndLabel();
+      const passengerName = (document.getElementById('rider-name').value || 'Guest Rider').trim();
+      const passengerPhone = (document.getElementById('rider-phone').value || '').trim();
+      const rideId = 'RIDE-' + Math.floor(100000 + Math.random() * 900000);
 
-      if (!dropoff) {
-        alert('Please enter a destination.');
+      const payload = {
+        rideId,
+        passengerName,
+        passengerPhone: passengerPhone || 'Not provided',
+        vehicleClass: selectedClass,
+        pickup: p.label,
+        pickupLat: p.lat,
+        pickupLng: p.lng,
+        dropoff: d.label,
+        distanceKm: calculatedDistanceKm,
+        fare: calculatedFareNum > 0 ? calculatedFareNum : 'NEW'
+      };
+
+      if (socket.connected) {
+        socket.emit('new_ride_request', payload);
+        setActiveRideUI(
+          rideId,
+          `Requesting ${selectedClass} (${payload.fare === 'NEW' ? 'NEW' : 'KES ' + payload.fare})...`
+        );
+      } else {
+        document.getElementById('booking-status').textContent = 'Not connected to dispatch server yet.';
+      }
+    }
+
+    function cancelActiveRide() {
+      if (!activeRideId) {
+        clearRideUI('');
         return;
       }
-
-      localStorage.setItem(RIDER_KEY, JSON.stringify({ name: riderName, phone: riderPhone }));
-
-      if (!socket.connected) {
-        alert('Connecting to server... please wait a moment and tap Request Ride again.');
-        socket.connect();
-        return;
+      if (socket.connected) {
+        socket.emit('rider_cancel_ride', { rideId: activeRideId });
       }
-
-      currentRideId = 'ride_' + Date.now();
-      document.getElementById('status-modal').classList.add('active');
-      document.getElementById('modal-title').textContent = 'Finding Your Driver...';
-      document.getElementById('modal-subtitle').textContent = 'Broadcasting to nearby drivers in Mombasa';
-      document.getElementById('driver-details').style.display = 'none';
-
-      socket.emit('new_ride_request', {
-        rideId: currentRideId,
-        passengerName: riderName || 'Guest Rider',
-        passengerPhone: riderPhone || 'Not provided',
-        pickup: pickup || 'Mombasa CBD',
-        dropoff: dropoff,
-        fare: 550
-      });
+      clearRideUI('Ride request cancelled.');
     }
 
     socket.on('ride_accepted', (data) => {
-      if (data.rideId === currentRideId) {
-        document.getElementById('modal-title').textContent = 'Driver Assigned! 🎉';
-        document.getElementById('modal-subtitle').textContent = 'Your driver is heading to your pickup location.';
-        document.getElementById('assigned-name').textContent = data.driverName || 'Benard';
-        document.getElementById('assigned-phone').textContent = data.driverPhone || 'Not provided';
-        document.getElementById('assigned-car').textContent = data.carModel || 'Vehicle';
-        document.getElementById('assigned-plate').textContent = data.plate || 'KDS 396K';
-        document.getElementById('assigned-doc').textContent = data.docRef || 'Verified';
-        document.getElementById('driver-details').style.display = 'flex';
+      if (!data) return;
+      if (activeRideId && data.rideId && data.rideId !== activeRideId) return;
+      document.getElementById('booking-status').textContent = 'Driver accepted your rideconst card = document.getElementById('matched-driver-card');
+      card.classList.add('visible');
+      if (data.driverPhoto) {
+        document.getElementById('matched-driver-img').src = data.driverPhoto;
       }
+      document.getElementById('matched-driver-name').textContent =
+        `${data.driverName || 'Driver'} • ${data.plate || ''}`;
+      document.getElementById('matched-driver-vehicle').textContent =
+        `${data.carModel || selectedClass} (${data.carColor || ''})`;
+      document.getElementById('matched-driver-phone').textContent = data.driverPhone || '';
     });
 
-    function cancelSearch() {
-      document.getElementById('status-modal').classList.remove('active');
-      currentRideId = null;
+    function handleDriverCancellation(data = {}) {
+      if (activeRideId && data.rideId && data.rideId !== activeRideId) return;
+      clearRideUI(data.reason || 'Driver cancelled the trip. You can request a new ride.');
     }
+
+    socket.on('ride_cancelled_by_driver', handleDriverCancellation);
+    socket.on('driver_cancel_ride', handleDriverCancellation);
+    socket.on('ride_cancelled', handleDriverCancellation);
+
+    recalculateLiveFare();
   </script>
 </body>
 </html>
