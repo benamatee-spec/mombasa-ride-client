@@ -18,9 +18,8 @@
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block; }
     .dot.ok { background: #10b981; }
 
-    #map { flex: 1; width: 100%; background: #0f172a; z-index: 1; }
+    #map { flex: 1; width: 100%; background: #e2e8f0; z-index: 1; }
 
-    /* Trip Status Banner */
     #trip-banner {
       display: none; position: fixed; top: 54px; left: 12px; right: 12px; z-index: 9500;
       background: #111827; border: 1.5px solid #10b981; border-radius: 14px;
@@ -37,7 +36,6 @@
       padding: 6px 12px; font-size: 11px; font-weight: 700; cursor: pointer;
     }
 
-    /* Bottom Sheet */
     .sheet {
       background: #111827; border-top: 1px solid #1f2937; border-radius: 18px 18px 0 0;
       padding: 12px 14px 18px; max-height: 66vh; overflow-y: auto; z-index: 1000;
@@ -80,7 +78,6 @@
     .book-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .hint-line { margin-top: 8px; font-size: 12px; color: #94a3b8; min-height: 16px; }
 
-    /* Invoice Modal */
     #invoice-modal {
       display: none; position: fixed; inset: 0; z-index: 99999;
       background: rgba(2, 6, 23, 0.88); align-items: center; justify-content: center; padding: 16px;
@@ -248,13 +245,13 @@
     try {
       if (typeof L !== 'undefined') {
         map = L.map('map', { zoomControl: true }).setView([riderCoords.lat, riderCoords.lng], 13);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
           maxZoom: 19,
-          attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+          attribution: 'Tiles &copy; Esri'
         }).addTo(map);
 
         riderMarker = L.circleMarker([riderCoords.lat, riderCoords.lng], {
-          radius: 8, fillColor: '#38bdf8', color: '#ffffff', weight: 2, fillOpacity: 1
+          radius: 8, fillColor: '#2563eb', color: '#ffffff', weight: 2, fillOpacity: 1
         }).addTo(map);
       }
     } catch (e) {}
