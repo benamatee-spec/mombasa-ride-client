@@ -3,135 +3,134 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Mombasa Ride Client</title>
+  <title>Mombasa Rider App</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
     body { background: #0b1120; color: #f8fafc; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
+    .topbar {
+      background: #111827; border-bottom: 1px solid #1f2937;
+      padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; z-index: 1000;
+    }
+    .brand { font-size: 15px; font-weight: 900; color: #34d399; letter-spacing: 0.02em; }
+    .conn-pill { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #cbd5e1; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block; }
+    .dot.ok { background: #10b981; }
+
     #map { flex: 1; width: 100%; background: #0f172a; z-index: 1; }
 
-    /* Live Trip Status Banner */
-    #client-trip-banner {
-      display: none;
-      position: fixed;
-      top: 12px;
-      left: 12px;
-      right: 12px;
-      z-index: 9500;
-      background: #111827;
-      color: #f8fafc;
-      border: 1.5px solid #10b981;
-      border-radius: 14px;
-      padding: 12px 14px;
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+    /* Trip Status Banner */
+    #trip-banner {
+      display: none; position: fixed; top: 54px; left: 12px; right: 12px; z-index: 9500;
+      background: #111827; border: 1.5px solid #10b981; border-radius: 14px;
+      padding: 12px 14px; box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
     }
-    .ctb-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-    .ctb-stage {
-      font-size: 11px; font-weight: 800; color: #34d399;
-      text-transform: uppercase; letter-spacing: 0.04em;
-    }
-    .ctb-conn { font-size: 11px; color: #94a3b8; }
-    .ctb-msg { font-size: 14px; font-weight: 800; color: #ffffff; margin-top: 3px; }
-    .ctb-sub { font-size: 12px; color: #cbd5e1; margin-top: 4px; line-height: 1.45; }
-    .ctb-fare-live { font-size: 12px; font-weight: 800; color: #38bdf8; margin-top: 5px; }
-    .ctb-wait { display: none; font-size: 12px; font-weight: 700; color: #fbbf24; margin-top: 5px; }
-    .ctb-actions { display: flex; gap: 8px; margin-top: 10px; }
-    .ctb-cancel-btn {
+    .tb-stage { font-size: 11px; font-weight: 800; color: #34d399; text-transform: uppercase; letter-spacing: 0.04em; }
+    .tb-title { font-size: 14px; font-weight: 800; color: #ffffff; margin-top: 3px; }
+    .tb-sub { font-size: 12px; color: #cbd5e1; margin-top: 4px; line-height: 1.4; }
+    .tb-meter { font-size: 12px; font-weight: 800; color: #38bdf8; margin-top: 5px; }
+    .tb-wait { display: none; font-size: 12px; font-weight: 700; color: #fbbf24; margin-top: 5px; }
+    .tb-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .tb-cancel {
       background: #ef4444; color: #fff; border: none; border-radius: 8px;
       padding: 6px 12px; font-size: 11px; font-weight: 700; cursor: pointer;
     }
 
-    /* Bottom Booking Sheet */
+    /* Bottom Sheet */
     .sheet {
       background: #111827; border-top: 1px solid #1f2937; border-radius: 18px 18px 0 0;
       padding: 12px 14px 18px; max-height: 66vh; overflow-y: auto; z-index: 1000;
     }
-    .sheet-handle { width: 38px; height: 4px; background: #334155; border-radius: 999px; margin: 0 auto 10px; }
-    .gps-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12px; }
-    .gps-status { color: #94a3b8; font-weight: 600; }
-    .reposition-btn { background: none; border: none; color: #34d399; font-weight: 700; font-size: 12px; cursor: pointer; }
+    .handle { width: 38px; height: 4px; background: #334155; border-radius: 999px; margin: 0 auto 10px; }
+    .gps-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12px; }
+    .gps-text { color: #94a3b8; font-weight: 600; }
+    .gps-btn { background: none; border: none; color: #34d399; font-weight: 700; font-size: 12px; cursor: pointer; }
 
-    .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
     .field label { display: block; font-size: 11px; color: #94a3b8; margin-bottom: 4px; font-weight: 700; }
     .field input, .field select {
       width: 100%; background: #0f172a; color: #f8fafc; border: 1px solid #334155;
       border-radius: 9px; padding: 8px 10px; font-size: 13px;
     }
 
-    /* 6 Vehicle Categories */
     .cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 10px; }
-    .cat-card {
+    .cat-btn {
       background: #182234; color: #f8fafc; border: 1px solid #24324a;
       border-radius: 10px; padding: 9px 8px; text-align: left; cursor: pointer;
     }
-    .cat-card.active { background: #102a24; border: 1.5px solid #10b981; }
+    .cat-btn.active { background: #102a24; border: 1.5px solid #10b981; }
     .cat-name { font-size: 12px; font-weight: 800; }
     .cat-min { font-size: 11px; color: #94a3b8; margin-top: 2px; }
-    .cat-card.active .cat-min { color: #34d399; font-weight: 700; }
+    .cat-btn.active .cat-min { color: #34d399; font-weight: 700; }
 
-    .quote-box {
+    .estimate-card {
       background: #0f172a; border: 1px solid #1e293b; border-radius: 10px;
       padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 10px; gap: 8px;
     }
-    .quote-title { font-size: 13px; font-weight: 800; color: #f8fafc; }
-    .quote-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
-    .quote-price { font-size: 16px; font-weight: 900; color: #10b981; white-space: nowrap; }
+    .est-cat { font-size: 13px; font-weight: 800; }
+    .est-meta { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    .est-price { font-size: 16px; font-weight: 900; color: #10b981; white-space: nowrap; }
 
-    .request-btn {
+    .book-btn {
       width: 100%; background: #10b981; color: #052e16; border: none; border-radius: 12px;
       padding: 13px; font-size: 15px; font-weight: 900; cursor: pointer;
     }
-    .request-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .status-note { margin-top: 8px; font-size: 12px; color: #94a3b8; min-height: 16px; }
+    .book-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .hint-line { margin-top: 8px; font-size: 12px; color: #94a3b8; min-height: 16px; }
 
-    /* End-of-Trip Invoice Receipt Modal */
-    #client-invoice-modal {
+    /* Invoice Modal */
+    #invoice-modal {
       display: none; position: fixed; inset: 0; z-index: 99999;
       background: rgba(2, 6, 23, 0.88); align-items: center; justify-content: center; padding: 16px;
     }
-    .cim-card {
-      width: 100%; max-width: 390px; background: #111827; color: #f8fafc;
-      border: 1px solid #334155; border-radius: 16px; padding: 16px;
+    .inv-card {
+      width: 100%; max-width: 390px; background: #111827; border: 1px solid #334155;
+      border-radius: 16px; padding: 16px;
     }
-    .cim-title { font-size: 16px; font-weight: 800; color: #34d399; margin-bottom: 10px; }
-    .cim-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #1f2937; font-size: 13px; }
-    .cim-total { display: flex; justify-content: space-between; padding-top: 10px; font-size: 16px; font-weight: 800; color: #10b981; }
-    .cim-btn {
+    .inv-title { font-size: 16px; font-weight: 800; color: #34d399; margin-bottom: 10px; }
+    .inv-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #1f2937; font-size: 13px; }
+    .inv-total { display: flex; justify-content: space-between; padding-top: 10px; font-size: 16px; font-weight: 800; color: #10b981; }
+    .inv-close {
       margin-top: 14px; width: 100%; background: #10b981; color: #052e16;
       border: none; border-radius: 10px; padding: 11px; font-weight: 800; cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div id="client-trip-banner">
-    <div class="ctb-top">
-      <span class="ctb-stage" id="ctb-stage">Ride Status</span>
-      <span class="ctb-conn" id="ctb-conn">Connecting...</span>
+  <header class="topbar">
+    <div class="brand">Mombasa Ride</div>
+    <div class="conn-pill">
+      <span class="dot" id="conn-dot"></span>
+      <span id="conn-label">Connecting...</span>
     </div>
-    <div class="ctb-msg" id="ctb-msg">Waiting for ride update...</div>
-    <div class="ctb-sub" id="ctb-sub"></div>
-    <div class="ctb-fare-live" id="ctb-fare-live"></div>
-    <div class="ctb-wait" id="ctb-wait">Driver waiting: <span id="ctb-wait-clock">00:00</span></div>
-    <div class="ctb-actions" id="ctb-actions" style="display:none;">
-      <button type="button" class="ctb-cancel-btn" onclick="cancelClientRideRequest()">Cancel Ride</button>
+  </header>
+
+  <div id="trip-banner">
+    <div class="tb-stage" id="tb-stage">Ride Status</div>
+    <div class="tb-title" id="tb-title">Searching for driver...</div>
+    <div class="tb-sub" id="tb-sub"></div>
+    <div class="tb-meter" id="tb-meter"></div>
+    <div class="tb-wait" id="tb-wait">Driver waiting: <span id="tb-wait-clock">00:00</span></div>
+    <div class="tb-actions" id="tb-actions" style="display:none;">
+      <button type="button" class="tb-cancel" onclick="cancelRideRequest()">Cancel Ride</button>
     </div>
   </div>
 
   <div id="map"></div>
 
   <section class="sheet">
-    <div class="sheet-handle"></div>
+    <div class="handle"></div>
 
-    <div class="gps-bar">
-      <span class="gps-status" id="gps-status">Locating in Mombasa...</span>
-      <button type="button" class="reposition-btn" onclick="repositionRiderGPS()">Reposition GPS</button>
+    <div class="gps-row">
+      <span class="gps-text" id="gps-label">Mombasa GPS ready</span>
+      <button type="button" class="gps-btn" onclick="locateRider()">Reposition GPS</button>
     </div>
 
-    <div class="input-grid">
+    <div class="form-grid">
       <div class="field">
-        <label for="rider-name">Your Name</label>
+        <label for="rider-name">Rider Name</label>
         <input type="text" id="rider-name" value="Guest Rider" />
       </div>
       <div class="field">
@@ -139,23 +138,23 @@
         <input type="text" id="rider-phone" placeholder="+2547..." />
       </div>
       <div class="field">
-        <label for="pickup-hub">Pickup Hub</label>
-        <select id="pickup-hub" onchange="recalculateEstimate()">
-          <option value="Current Live GPS">Current Live GPS</option>
-          <option value="Mombasa CBD / Mwembe Tayari">Mombasa CBD / Mwembe Tayari</option>
+        <label for="pickup-point">Pickup</label>
+        <select id="pickup-point" onchange="updateFareEstimate()">
+          <option value="Current Mombasa Location">Current Mombasa Location</option>
           <option value="Nyali Bridge">Nyali Bridge</option>
           <option value="Moi International Airport (MBA)">Moi International Airport (MBA)</option>
-          <option value="SGR Miritini Terminus">SGR Miritini Terminus</option>
+          <option value="SGR Miritini">SGR Miritini</option>
           <option value="Likoni Ferry">Likoni Ferry</option>
+          <option value="Mombasa CBD">Mombasa CBD</option>
         </select>
       </div>
       <div class="field">
-        <label for="dropoff-hub">Drop-off Hub</label>
-        <select id="dropoff-hub" onchange="recalculateEstimate()">
-          <option value="Mombasa CBD / Mwembe Tayari">Mombasa CBD / Mwembe Tayari</option>
+        <label for="dropoff-point">Drop-off</label>
+        <select id="dropoff-point" onchange="updateFareEstimate()">
+          <option value="Mombasa CBD">Mombasa CBD</option>
           <option value="Nyali Bridge">Nyali Bridge</option>
           <option value="Moi International Airport (MBA)">Moi International Airport (MBA)</option>
-          <option value="SGR Miritini Terminus">SGR Miritini Terminus</option>
+          <option value="SGR Miritini">SGR Miritini</option>
           <option value="Likoni Ferry">Likoni Ferry</option>
           <option value="Bamburi / Shanzu">Bamburi / Shanzu</option>
         </select>
@@ -163,59 +162,59 @@
     </div>
 
     <div class="cat-grid">
-      <button type="button" class="cat-card" data-cat="Boda" onclick="selectCategory('Boda')">
+      <button type="button" class="cat-btn" data-cat="Boda" onclick="pickCategory('Boda')">
         <div class="cat-name">Boda</div>
         <div class="cat-min">Min KES 150</div>
       </button>
-      <button type="button" class="cat-card" data-cat="Tukutuku" onclick="selectCategory('Tukutuku')">
+      <button type="button" class="cat-btn" data-cat="Tukutuku" onclick="pickCategory('Tukutuku')">
         <div class="cat-name">Tukutuku</div>
         <div class="cat-min">Min KES 200</div>
       </button>
-      <button type="button" class="cat-card" data-cat="Standard" onclick="selectCategory('Standard')">
+      <button type="button" class="cat-btn active" data-cat="Standard" onclick="pickCategory('Standard')">
         <div class="cat-name">Standard</div>
         <div class="cat-min">Min KES 250</div>
       </button>
-      <button type="button" class="cat-card" data-cat="Comfort" onclick="selectCategory('Comfort')">
+      <button type="button" class="cat-btn" data-cat="Comfort" onclick="pickCategory('Comfort')">
         <div class="cat-name">Comfort</div>
         <div class="cat-min">Min KES 350</div>
       </button>
-      <button type="button" class="cat-card active" data-cat="XL" onclick="selectCategory('XL')">
+      <button type="button" class="cat-btn" data-cat="XL" onclick="pickCategory('XL')">
         <div class="cat-name">XL</div>
         <div class="cat-min">Min KES 400</div>
       </button>
-      <button type="button" class="cat-card" data-cat="VIP Class" onclick="selectCategory('VIP Class')">
+      <button type="button" class="cat-btn" data-cat="VIP Class" onclick="pickCategory('VIP Class')">
         <div class="cat-name">VIP Class</div>
         <div class="cat-min">NEW</div>
       </button>
     </div>
 
-    <div class="quote-box">
+    <div class="estimate-card">
       <div>
-        <div class="quote-title" id="quote-title">XL</div>
-        <div class="quote-sub" id="quote-sub">~1.7 km • Nyali Bridge 1.4x surge</div>
+        <div class="est-cat" id="est-cat">Standard</div>
+        <div class="est-meta" id="est-meta">~2.5 km • Mombasa standard fare</div>
       </div>
-      <div class="quote-price" id="quote-price">KES 560</div>
+      <div class="est-price" id="est-price">KES 250</div>
     </div>
 
-    <button type="button" class="request-btn" id="btn-request-ride" onclick="requestMombasaRide()">
+    <button type="button" class="book-btn" id="btn-book-ride" onclick="sendRideRequest()">
       Request Ride
     </button>
-    <div class="status-note" id="client-status-note"></div>
+    <div class="hint-line" id="hint-line"></div>
   </section>
 
-  <div id="client-invoice-modal">
-    <div class="cim-card">
-      <div class="cim-title">Trip Completed • Receipt</div>
-      <div id="cim-lines"></div>
-      <button type="button" class="cim-btn" onclick="closeClientInvoiceModal()">Close Receipt</button>
+  <div id="invoice-modal">
+    <div class="inv-card">
+      <div class="inv-title">Trip Completed • Receipt</div>
+      <div id="inv-lines"></div>
+      <button type="button" class="inv-close" onclick="closeInvoice()">Done</button>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
-    const BACKEND_URL = 'https://mombasa-ride-server.onrender.com';
-    const MOMBASA_CENTER = { lat: -4.0435, lng: 39.6682 };
+    const SERVER_URL = 'https://mombasa-ride-server.onrender.com';
+    const MOMBASA_DEFAULT = { lat: -4.0435, lng: 39.6682 };
 
     const TARIFFS = {
       'Boda': { baseFare: 60, perKm: 25, minFare: 150 },
@@ -226,161 +225,163 @@
       'VIP Class': { baseFare: 300, perKm: 95, minFare: 500 }
     };
 
-    const ZONE_SURGE = {
-      'Nyali Bridge': { km: 3.4, surge: 1.4, label: 'Nyali Bridge 1.4x surge' },
-      'Moi International Airport (MBA)': { km: 9.5, surge: 1.3, label: 'MBA Airport 1.3x surge' },
-      'SGR Miritini Terminus': { km: 14.0, surge: 1.5, label: 'SGR Miritini 1.5x surge' },
-      'Likoni Ferry': { km: 5.2, surge: 1.2, label: 'Likoni Ferry 1.2x surge' },
-      'Mombasa CBD / Mwembe Tayari': { km: 2.2, surge: 1.0, label: 'Mombasa CBD normal fare' },
-      'Bamburi / Shanzu': { km: 11.5, surge: 1.2, label: 'North Coast 1.2x surge' }
+    const HUB_ZONES = {
+      'Nyali Bridge': { km: 3.4, surge: 1.4, note: 'Nyali Bridge 1.4x surge' },
+      'Moi International Airport (MBA)': { km: 9.5, surge: 1.3, note: 'MBA Airport 1.3x surge' },
+      'SGR Miritini': { km: 14.0, surge: 1.5, note: 'SGR Miritini 1.5x surge' },
+      'Likoni Ferry': { km: 5.2, surge: 1.2, note: 'Likoni Ferry 1.2x surge' },
+      'Mombasa CBD': { km: 2.2, surge: 1.0, note: 'Mombasa CBD standard fare' },
+      'Bamburi / Shanzu': { km: 11.5, surge: 1.2, note: 'North Coast 1.2x surge' }
     };
 
-    let selectedCategory = 'XL';
-    let riderCoords = { ...MOMBASA_CENTER };
+    let selectedCategory = 'Standard';
+    let riderCoords = { ...MOMBASA_DEFAULT };
     let activeRideId = null;
-    let estimatedFare = 560;
-    let estimatedSurge = 1.4;
-    let driverPin = null;
-    let riderPin = null;
-    let waitInterval = null;
-    let waitSec = 0;
+    let quoteFare = 250;
+    let quoteSurge = 1.0;
+    let riderMarker = null;
+    let driverMarker = null;
+    let waitTimer = null;
+    let waitSeconds = 0;
 
     let map = null;
     try {
       if (typeof L !== 'undefined') {
         map = L.map('map', { zoomControl: true }).setView([riderCoords.lat, riderCoords.lng], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
           maxZoom: 19,
-          attribution: '&copy; OpenStreetMap contributors'
+          attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
         }).addTo(map);
-        riderPin = L.circleMarker([riderCoords.lat, riderCoords.lng], {
+
+        riderMarker = L.circleMarker([riderCoords.lat, riderCoords.lng], {
           radius: 8, fillColor: '#38bdf8', color: '#ffffff', weight: 2, fillOpacity: 1
         }).addTo(map);
       }
     } catch (e) {}
 
-    function repositionRiderGPS() {
+    function locateRider() {
       if (map) map.setView([riderCoords.lat, riderCoords.lng], 14);
-      if (!navigator.geolocation) {
-        document.getElementById('gps-status').textContent = 'Mombasa GPS ready';
-        return;
-      }
+      if (!navigator.geolocation) return;
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           riderCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          if (riderPin) riderPin.setLatLng([riderCoords.lat, riderCoords.lng]);
+          if (riderMarker) riderMarker.setLatLng([riderCoords.lat, riderCoords.lng]);
           if (map) map.setView([riderCoords.lat, riderCoords.lng], 14);
-          document.getElementById('gps-status').textContent = 'GPS locked in Mombasa';
+          document.getElementById('gps-label').textContent = 'GPS locked in Mombasa';
         },
         () => {
-          document.getElementById('gps-status').textContent = 'Mombasa default location active';
+          document.getElementById('gps-label').textContent = 'Mombasa default location active';
         },
         { enableHighAccuracy: true, timeout: 8000 }
       );
     }
 
-    function selectCategory(cat) {
+    function pickCategory(cat) {
       if (!TARIFFS[cat]) return;
       selectedCategory = cat;
-      document.querySelectorAll('.cat-card').forEach((card) => {
-        card.classList.toggle('active', card.dataset.cat === cat);
+      document.querySelectorAll('.cat-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.cat === cat);
       });
-      recalculateEstimate();
+      updateFareEstimate();
     }
 
-    function recalculateEstimate() {
-      const pickup = document.getElementById('pickup-hub').value;
-      const dropoff = document.getElementById('dropoff-hub').value;
-      const zoneInfo = ZONE_SURGE[dropoff] || ZONE_SURGE[pickup] || { km: 2.5, surge: 1.0, label: 'Mombasa standard fare' };
-      const tariff = TARIFFS[selectedCategory] || TARIFFS['Standard'];
+    function updateFareEstimate() {
+      const pickup = document.getElementById('pickup-point').value;
+      const dropoff = document.getElementById('dropoff-point').value;
+      const zone = HUB_ZONES[dropoff] || HUB_ZONES[pickup] || { km: 2.5, surge: 1.0, note: 'Mombasa standard fare' };
+      const tariff = TARIFFS[selectedCategory];
 
-      const rawFare = Math.round((tariff.baseFare + zoneInfo.km * tariff.perKm) * zoneInfo.surge);
-      estimatedFare = Math.max(tariff.minFare, rawFare);
-      estimatedSurge = zoneInfo.surge;
+      const raw = Math.round((tariff.baseFare + zone.km * tariff.perKm) * zone.surge);
+      quoteFare = Math.max(tariff.minFare, raw);
+      quoteSurge = zone.surge;
 
-      document.getElementById('quote-title').textContent = selectedCategory;
-      document.getElementById('quote-sub').textContent = `~${zoneInfo.km.toFixed(1)} km • ${zoneInfo.label}`;
-      document.getElementById('quote-price').textContent = `KES ${estimatedFare.toLocaleString()}`;
+      document.getElementById('est-cat').textContent = selectedCategory;
+      document.getElementById('est-meta').textContent = `~${zone.km.toFixed(1)} km • ${zone.note}`;
+      document.getElementById('est-price').textContent = `KES ${quoteFare.toLocaleString()}`;
     }
 
-    function formatSec(seconds) {
-      const s = Math.max(0, Number(seconds) || 0);
+    function formatClock(sec) {
+      const s = Math.max(0, Number(sec) || 0);
       const mins = String(Math.floor(s / 60)).padStart(2, '0');
       const rem = String(s % 60).padStart(2, '0');
       return `${mins}:${rem}`;
     }
 
-    function showBanner(stage, message, subText = '', liveFareText = '', showCancel = false) {
-      const banner = document.getElementById('client-trip-banner');
+    function showBanner(stage, title, sub = '', meter = '', canCancel = false) {
+      const banner = document.getElementById('trip-banner');
       if (!banner) return;
       banner.style.display = 'block';
-      document.getElementById('ctb-stage').textContent = stage;
-      document.getElementById('ctb-msg').textContent = message;
-      document.getElementById('ctb-sub').textContent = subText;
-      document.getElementById('ctb-fare-live').textContent = liveFareText;
-      document.getElementById('ctb-actions').style.display = showCancel ? 'flex' : 'none';
+      document.getElementById('tb-stage').textContent = stage;
+      document.getElementById('tb-title').textContent = title;
+      document.getElementById('tb-sub').textContent = sub;
+      document.getElementById('tb-meter').textContent = meter;
+      document.getElementById('tb-actions').style.display = canCancel ? 'flex' : 'none';
     }
 
-    function startWaitTimer() {
-      stopWaitTimer();
-      waitSec = 0;
-      const box = document.getElementById('ctb-wait');
-      const clock = document.getElementById('ctb-wait-clock');
+    function startWaitCounter() {
+      stopWaitCounter();
+      waitSeconds = 0;
+      const box = document.getElementById('tb-wait');
+      const clock = document.getElementById('tb-wait-clock');
       if (box) box.style.display = 'block';
       if (clock) clock.textContent = '00:00';
-      waitInterval = setInterval(() => {
-        waitSec += 1;
-        if (clock) clock.textContent = formatSec(waitSec);
+      waitTimer = setInterval(() => {
+        waitSeconds += 1;
+        if (clock) clock.textContent = formatClock(waitSeconds);
       }, 1000);
     }
 
-    function stopWaitTimer() {
-      if (waitInterval) {
-        clearInterval(waitInterval);
-        waitInterval = null;
+    function stopWaitCounter() {
+      if (waitTimer) {
+        clearInterval(waitTimer);
+        waitTimer = null;
       }
-      const box = document.getElementById('ctb-wait');
+      const box = document.getElementById('tb-wait');
       if (box) box.style.display = 'none';
     }
 
-    function moveDriverPin(lat, lng, label) {
+    function updateDriverMarker(lat, lng, label) {
       if (!map || typeof L === 'undefined') return;
       if (typeof lat !== 'number' || typeof lng !== 'number') return;
-      if (!driverPin) {
-        driverPin = L.circleMarker([lat, lng], {
+      if (!driverMarker) {
+        driverMarker = L.circleMarker([lat, lng], {
           radius: 10, fillColor: '#10b981', color: '#ffffff', weight: 2, fillOpacity: 1
         }).addTo(map);
       } else {
-        driverPin.setLatLng([lat, lng]);
+        driverMarker.setLatLng([lat, lng]);
       }
-      if (label) driverPin.bindTooltip(label);
+      if (label) driverMarker.bindTooltip(label);
+    }
+
+    function matchesActiveTrip(payload) {
+      if (!activeRideId || !payload || !payload.rideId) return true;
+      return payload.rideId === activeRideId;
     }
 
     const socket = typeof io !== 'undefined'
-      ? io(BACKEND_URL, { transports: ['websocket', 'polling'] })
+      ? io(SERVER_URL, { transports: ['websocket', 'polling'] })
       : null;
 
     if (socket) {
       socket.on('connect', () => {
-        const connEl = document.getElementById('ctb-conn');
-        if (connEl) connEl.textContent = 'Live Connected';
+        document.getElementById('conn-dot').classList.add('ok');
+        document.getElementById('conn-label').textContent = 'Connected';
       });
 
       socket.on('disconnect', () => {
-        const connEl = document.getElementById('ctb-conn');
-        if (connEl) connEl.textContent = 'Reconnecting...';
+        document.getElementById('conn-dot').classList.remove('ok');
+        document.getElementById('conn-label').textContent = 'Reconnecting...';
       });
 
-      // 1. Driver taps ACCEPT
       socket.on('ride_accepted', (data = {}) => {
-        if (activeRideId && data.rideId && data.rideId !== activeRideId) return;
+        if (!matchesActiveTrip(data)) return;
         if (data.rideId) activeRideId = data.rideId;
 
         const driverName = data.driverName || 'Your Driver';
         const plate = data.plate || '';
         const vehicle = data.carModel || data.vehicleClass || selectedCategory;
 
-        document.getElementById('client-status-note').textContent = `Ride accepted by ${driverName}`;
+        document.getElementById('hint-line').textContent = `Ride accepted by ${driverName}`;
         showBanner(
           'Ride Accepted',
           `Ride accepted by ${driverName}`,
@@ -390,47 +391,45 @@
         );
 
         if (typeof data.lat === 'number' && typeof data.lng === 'number') {
-          moveDriverPin(data.lat, data.lng, `${driverName} (${plate})`);
+          updateDriverMarker(data.lat, data.lng, `${driverName} (${plate})`);
         }
       });
 
-      // Live GPS movement
       socket.on('driver_location_update', (data = {}) => {
-        if (activeRideId && data.rideId && data.rideId !== activeRideId) return;
+        if (!matchesActiveTrip(data)) return;
         const lat = typeof data.lat === 'number' ? data.lat : (data.coords && data.coords.lat);
         const lng = typeof data.lng === 'number' ? data.lng : (data.coords && data.coords.lng);
 
         if (typeof lat === 'number' && typeof lng === 'number') {
-          moveDriverPin(lat, lng, `${data.driverName || 'Driver'} (${data.plate || ''})`);
+          updateDriverMarker(lat, lng, `${data.driverName || 'Driver'} (${data.plate || ''})`);
         }
 
         if (data.stage === 'going_to_pickup') {
           showBanner(
-            'Driver Moving',
+            'Driver En Route',
             `${data.driverName || 'Your driver'} is moving to pickup`,
             `${data.vehicleClass || selectedCategory}${data.plate ? ` • ${data.plate}` : ''}`,
             '',
             true
           );
         } else if (data.stage === 'in_progress') {
-          const fareLine = typeof data.runningFare === 'number'
+          const meterText = typeof data.runningFare === 'number'
             ? `Live Meter: KES ${data.runningFare.toLocaleString()}${typeof data.distanceKm === 'number' ? ` • ${data.distanceKm.toFixed(2)} km` : ''}`
             : '';
           showBanner(
             'Trip In Progress',
             `Heading to destination with ${data.driverName || 'your driver'}`,
             `${data.vehicleClass || selectedCategory}${data.plate ? ` • ${data.plate}` : ''}`,
-            fareLine,
+            meterText,
             false
           );
         }
       });
 
-      // 2. Driver taps ARRIVED
       socket.on('driver_arrived', (data = {}) => {
-        if (activeRideId && data.rideId && data.rideId !== activeRideId) return;
-        startWaitTimer();
-        document.getElementById('client-status-note').textContent = data.message || 'Your driver arrived!';
+        if (!matchesActiveTrip(data)) return;
+        startWaitCounter();
+        document.getElementById('hint-line').textContent = data.message || 'Your driver arrived!';
         showBanner(
           'Driver Arrived',
           data.message || 'Your driver arrived!',
@@ -440,11 +439,10 @@
         );
       });
 
-      // 3. Driver taps START TRIP
       socket.on('trip_started', (data = {}) => {
-        if (activeRideId && data.rideId && data.rideId !== activeRideId) return;
-        stopWaitTimer();
-        document.getElementById('client-status-note').textContent = data.message || 'Trip has started!';
+        if (!matchesActiveTrip(data)) return;
+        stopWaitCounter();
+        document.getElementById('hint-line').textContent = data.message || 'Trip has started!';
         showBanner(
           'Trip Started',
           data.message || 'Trip has started!',
@@ -454,62 +452,61 @@
         );
       });
 
-      // 4. Driver taps END TRIP -> Show itemized invoice
       socket.on('trip_completed', (data = {}) => {
-        if (activeRideId && data.rideId && data.rideId !== activeRideId) return;
-        stopWaitTimer();
+        if (!matchesActiveTrip(data)) return;
+        stopWaitCounter();
         activeRideId = null;
-        document.getElementById('btn-request-ride').disabled = false;
-        document.getElementById('client-status-note').textContent = 'Trip completed.';
+        document.getElementById('btn-book-ride').disabled = false;
+        document.getElementById('hint-line').textContent = 'Trip completed.';
 
         const inv = data.invoice || {};
-        const totalAmount = Number(data.totalAmount ?? inv.totalAmount ?? estimatedFare);
+        const total = Number(data.totalAmount ?? inv.totalAmount ?? quoteFare);
 
         showBanner(
           'Trip Completed',
-          `Trip ended • Total: KES ${totalAmount.toLocaleString()}`,
+          `Trip ended • Total: KES ${total.toLocaleString()}`,
           `${data.pickup || 'Pickup'} → ${data.dropoff || 'Drop-off'}`,
           '',
           false
         );
 
-        document.getElementById('cim-lines').innerHTML =
-          `<div class="cim-row"><span>Driver</span><strong>${data.driverName || 'Driver'} (${data.plate || ''})</strong></div>` +
-          `<div class="cim-row"><span>Category</span><span>${inv.category || data.carModel || selectedCategory}</span></div>` +
-          `<div class="cim-row"><span>Base Fare</span><span>KES ${inv.baseFare ?? 0}</span></div>` +
-          `<div class="cim-row"><span>Distance (${(inv.distanceKm ?? 0).toFixed(2)} km)</span><span>KES ${inv.distanceCharge ?? 0}</span></div>` +
-          `<div class="cim-row"><span>Trip Time (${formatSec(inv.tripSeconds)})</span><span>KES ${inv.timeCharge ?? 0}</span></div>` +
-          `<div class="cim-row"><span>Waiting (${formatSec(inv.waitSeconds)})</span><span>KES ${inv.waitCharge ?? 0}</span></div>` +
-          (inv.surgeMultiplier > 1 ? `<div class="cim-row"><span>Surge</span><span>${inv.surgeMultiplier}x</span></div>` : '') +
-          `<div class="cim-total"><span>Total Amount</span><span>KES ${totalAmount.toLocaleString()}</span></div>`;
+        document.getElementById('inv-lines').innerHTML =
+          `<div class="inv-row"><span>Driver</span><strong>${data.driverName || 'Driver'} (${data.plate || ''})</strong></div>` +
+          `<div class="inv-row"><span>Category</span><span>${inv.category || data.carModel || selectedCategory}</span></div>` +
+          `<div class="inv-row"><span>Base Fare</span><span>KES ${inv.baseFare ?? 0}</span></div>` +
+          `<div class="inv-row"><span>Distance (${(inv.distanceKm ?? 0).toFixed(2)} km)</span><span>KES ${inv.distanceCharge ?? 0}</span></div>` +
+          `<div class="inv-row"><span>Trip Time (${formatClock(inv.tripSeconds)})</span><span>KES ${inv.timeCharge ?? 0}</span></div>` +
+          `<div class="inv-row"><span>Waiting (${formatClock(inv.waitSeconds)})</span><span>KES ${inv.waitCharge ?? 0}</span></div>` +
+          (inv.surgeMultiplier > 1 ? `<div class="inv-row"><span>Surge</span><span>${inv.surgeMultiplier}x</span></div>` : '') +
+          `<div class="inv-total"><span>Total Amount</span><span>KES ${total.toLocaleString()}</span></div>`;
 
-        document.getElementById('client-invoice-modal').style.display = 'flex';
+        document.getElementById('invoice-modal').style.display = 'flex';
       });
 
       socket.on('ride_cancelled_by_driver', (data = {}) => {
-        if (activeRideId && data.rideId && data.rideId !== activeRideId) return;
-        stopWaitTimer();
+        if (!matchesActiveTrip(data)) return;
+        stopWaitCounter();
         activeRideId = null;
-        document.getElementById('btn-request-ride').disabled = false;
-        document.getElementById('client-status-note').textContent = 'Ride request cancelled.';
-        showBanner('Ride Cancelled', data.reason || 'Driver cancelled the trip.', 'You can request another ride anytime.');
+        document.getElementById('btn-book-ride').disabled = false;
+        document.getElementById('hint-line').textContent = 'Ride request cancelled.';
+        showBanner('Ride Cancelled', data.reason || 'Driver cancelled the trip.', 'Tap Request Ride whenever you are ready.');
       });
     }
 
-    function requestMombasaRide() {
+    function sendRideRequest() {
       const passengerName = document.getElementById('rider-name').value.trim() || 'Guest Rider';
       const passengerPhone = document.getElementById('rider-phone').value.trim();
-      const pickup = document.getElementById('pickup-hub').value;
-      const dropoff = document.getElementById('dropoff-hub').value;
+      const pickup = document.getElementById('pickup-point').value;
+      const dropoff = document.getElementById('dropoff-point').value;
 
       activeRideId = `RIDE-${Date.now()}`;
-      document.getElementById('btn-request-ride').disabled = true;
-      document.getElementById('client-status-note').textContent = 'Searching for available Mombasa drivers...';
+      document.getElementById('btn-book-ride').disabled = true;
+      document.getElementById('hint-line').textContent = `Sending ${selectedCategory} request...`;
 
       showBanner(
         'Request Sent',
         `Searching for ${selectedCategory} driver...`,
-        `${pickup} → ${dropoff} • Est. KES ${estimatedFare.toLocaleString()}`,
+        `${pickup} → ${dropoff} • Est. KES ${quoteFare.toLocaleString()}`,
         '',
         true
       );
@@ -522,38 +519,38 @@
           vehicleClass: selectedCategory,
           pickup,
           dropoff,
-          fare: estimatedFare,
-          surgeMultiplier: estimatedSurge,
+          fare: quoteFare,
+          surgeMultiplier: quoteSurge,
           coords: riderCoords,
           lat: riderCoords.lat,
           lng: riderCoords.lng
         });
       } else {
-        document.getElementById('client-status-note').textContent = 'Connecting to dispatch server...';
+        document.getElementById('hint-line').textContent = 'Waiting for Render server connection...';
       }
     }
 
-    function cancelClientRideRequest() {
+    function cancelRideRequest() {
       if (socket && socket.connected && activeRideId) {
         socket.emit('ride_cancelled_by_client', {
           rideId: activeRideId,
           message: 'Rider cancelled the trip.'
         });
       }
-      stopWaitTimer();
+      stopWaitCounter();
       activeRideId = null;
-      document.getElementById('btn-request-ride').disabled = false;
-      document.getElementById('ctb-actions').style.display = 'none';
-      document.getElementById('client-status-note').textContent = 'Ride request cancelled.';
+      document.getElementById('btn-book-ride').disabled = false;
+      document.getElementById('tb-actions').style.display = 'none';
+      document.getElementById('hint-line').textContent = 'Ride request cancelled.';
       showBanner('Request Cancelled', 'You cancelled the ride request.', 'Select a category and tap Request Ride anytime.');
     }
 
-    function closeClientInvoiceModal() {
-      document.getElementById('client-invoice-modal').style.display = 'none';
+    function closeInvoice() {
+      document.getElementById('invoice-modal').style.display = 'none';
     }
 
-    recalculateEstimate();
-    repositionRiderGPS();
+    updateFareEstimate();
+    locateRider();
   </script>
 </body>
 </html>
