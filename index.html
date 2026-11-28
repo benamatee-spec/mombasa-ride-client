@@ -11,10 +11,16 @@
 
     .topbar {
       background: #111827; border-bottom: 1px solid #1f2937;
-      padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; z-index: 1000;
+      padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; z-index: 1000;
     }
     .brand { font-size: 15px; font-weight: 900; color: #34d399; letter-spacing: 0.02em; }
-    .conn-pill { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #cbd5e1; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .top-call-btn {
+      background: #064e3b; color: #6ee7b7; border: 1px solid #10b981;
+      border-radius: 999px; padding: 5px 11px; font-size: 11px; font-weight: 800;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+    }
+    .conn-pill { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #cbd5e1; white-space: nowrap; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block; }
     .dot.ok { background: #10b981; }
 
@@ -38,7 +44,7 @@
 
     .sheet {
       background: #111827; border-top: 1px solid #1f2937; border-radius: 18px 18px 0 0;
-      padding: 12px 14px 18px; max-height: 66vh; overflow-y: auto; z-index: 1000;
+      padding: 12px 14px 18px; max-height: 68vh; overflow-y: auto; z-index: 1000;
     }
     .handle { width: 38px; height: 4px; background: #334155; border-radius: 999px; margin: 0 auto 10px; }
     .gps-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12px; }
@@ -71,12 +77,25 @@
     .est-meta { font-size: 11px; color: #94a3b8; margin-top: 2px; }
     .est-price { font-size: 16px; font-weight: 900; color: #10b981; white-space: nowrap; }
 
+    .action-row { display: grid; grid-template-columns: 1.45fr 1fr; gap: 8px; }
     .book-btn {
       width: 100%; background: #10b981; color: #052e16; border: none; border-radius: 12px;
-      padding: 13px; font-size: 15px; font-weight: 900; cursor: pointer;
+      padding: 13px; font-size: 14px; font-weight: 900; cursor: pointer;
     }
     .book-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .hint-line { margin-top: 8px; font-size: 12px; color: #94a3b8; min-height: 16px; }
+    .call-direct-btn {
+      width: 100%; background: #1e293b; color: #f8fafc; border: 1.5px solid #10b981;
+      border-radius: 12px; padding: 12px 10px; font-size: 13px; font-weight: 800;
+      text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px;
+      text-align: center;
+    }
+    .reserve-note {
+      margin-top: 8px; font-size: 11.5px; color: #cbd5e1;
+      background: #0f172a; border: 1px dashed #334155; border-radius: 9px; padding: 7px 10px;
+      line-height: 1.35;
+    }
+    .reserve-note strong { color: #34d399; }
+    .hint-line { margin-top: 6px; font-size: 12px; color: #94a3b8; min-height: 16px; }
 
     #invoice-modal {
       display: none; position: fixed; inset: 0; z-index: 99999;
@@ -98,9 +117,12 @@
 <body>
   <header class="topbar">
     <div class="brand">Mombasa Ride</div>
-    <div class="conn-pill">
-      <span class="dot" id="conn-dot"></span>
-      <span id="conn-label">Connecting...</span>
+    <div class="topbar-right">
+      <a href="tel:0700246976" class="direct-call-target top-call-btn">📞 Call to Book</a>
+      <div class="conn-pill">
+        <span class="dot" id="conn-dot"></span>
+        <span id="conn-label">Connecting...</span>
+      </div>
     </div>
   </header>
 
@@ -193,9 +215,18 @@
       <div class="est-price" id="est-price">KES 250</div>
     </div>
 
-    <button type="button" class="book-btn" id="btn-book-ride" onclick="sendRideRequest()">
-      Request Ride
-    </button>
+    <div class="action-row">
+      <button type="button" class="book-btn" id="btn-book-ride" onclick="sendRideRequest()">
+        Request Ride
+      </button>
+      <a href="tel:0700246976" class="direct-call-target call-direct-btn">
+        📞 Call 0700246976
+      </a>
+    </div>
+
+    <div class="reserve-note">
+      <strong>First booking or reserving a ride?</strong> Call <strong>0700246976</strong> directly to book or reserve with Benard.
+    </div>
     <div class="hint-line" id="hint-line"></div>
   </section>
 
@@ -211,7 +242,12 @@
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     const SERVER_URL = 'https://mombasa-ride-server.onrender.com';
+    const DIRECT_BOOKING_PHONE = '0700246976';
     const MOMBASA_DEFAULT = { lat: -4.0435, lng: 39.6682 };
+
+    document.querySelectorAll('.direct-call-target').forEach((el) => {
+      el.href = `tel:${DIRECT_BOOKING_PHONE}`;
+    });
 
     const TARIFFS = {
       'Boda': { baseFare: 60, perKm: 25, minFare: 150 },
