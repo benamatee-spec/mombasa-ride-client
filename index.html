@@ -14,13 +14,18 @@
       padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; z-index: 1000;
     }
     .brand { font-size: 15px; font-weight: 900; color: #34d399; letter-spacing: 0.02em; }
-    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
     .top-call-btn {
       background: #064e3b; color: #6ee7b7; border: 1px solid #10b981;
-      border-radius: 999px; padding: 5px 11px; font-size: 11px; font-weight: 800;
+      border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 800;
       text-decoration: none; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
     }
-    .conn-pill { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #cbd5e1; white-space: nowrap; }
+    .top-res-btn {
+      background: #1e293b; color: #f8fafc; border: 1px solid #475569;
+      border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 800;
+      cursor: pointer; white-space: nowrap;
+    }
+    .conn-pill { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #cbd5e1; white-space: nowrap; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block; }
     .dot.ok { background: #10b981; }
 
@@ -53,10 +58,11 @@
 
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
     .field label { display: block; font-size: 11px; color: #94a3b8; margin-bottom: 4px; font-weight: 700; }
-    .field input, .field select {
+    .field input, .field select, .field textarea {
       width: 100%; background: #0f172a; color: #f8fafc; border: 1px solid #334155;
       border-radius: 9px; padding: 8px 10px; font-size: 13px;
     }
+    .field input:focus { outline: none; border-color: #10b981; }
 
     .cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 10px; }
     .cat-btn {
@@ -77,35 +83,69 @@
     .est-meta { font-size: 11px; color: #94a3b8; margin-top: 2px; }
     .est-price { font-size: 16px; font-weight: 900; color: #10b981; white-space: nowrap; }
 
-    .action-row { display: grid; grid-template-columns: 1.45fr 1fr; gap: 8px; }
+    .action-row { display: grid; grid-template-columns: 1.35fr 1fr; gap: 8px; }
     .book-btn {
       width: 100%; background: #10b981; color: #052e16; border: none; border-radius: 12px;
       padding: 13px; font-size: 14px; font-weight: 900; cursor: pointer;
     }
     .book-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .call-direct-btn {
+    .reserve-btn {
       width: 100%; background: #1e293b; color: #f8fafc; border: 1.5px solid #10b981;
       border-radius: 12px; padding: 12px 10px; font-size: 13px; font-weight: 800;
-      text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px;
-      text-align: center;
+      cursor: pointer;
     }
+
     .reserve-note {
       margin-top: 8px; font-size: 11.5px; color: #cbd5e1;
-      background: #0f172a; border: 1px dashed #334155; border-radius: 9px; padding: 7px 10px;
-      line-height: 1.35;
+      background: #0f172a; border: 1px dashed #334155; border-radius: 9px; padding: 8px 10px;
+      line-height: 1.4; display: flex; justify-content: space-between; align-items: center; gap: 8px;
     }
     .reserve-note strong { color: #34d399; }
+    .inline-call-link {
+      color: #6ee7b7; font-weight: 800; text-decoration: none; white-space: nowrap;
+      background: #064e3b; padding: 5px 9px; border-radius: 8px; border: 1px solid #10b981; font-size: 11px;
+    }
     .hint-line { margin-top: 6px; font-size: 12px; color: #94a3b8; min-height: 16px; }
 
-    #invoice-modal {
+    /* Reservation / Direct Booking Modal */
+    .overlay-modal {
       display: none; position: fixed; inset: 0; z-index: 99999;
       background: rgba(2, 6, 23, 0.88); align-items: center; justify-content: center; padding: 16px;
     }
-    .inv-card {
-      width: 100%; max-width: 390px; background: #111827; border: 1px solid #334155;
-      border-radius: 16px; padding: 16px;
+    .overlay-modal.open { display: flex; }
+    .modal-card {
+      width: 100%; max-width: 400px; background: #111827; border: 1px solid #334155;
+      border-radius: 16px; padding: 16px; max-height: 88vh; overflow-y: auto;
     }
-    .inv-title { font-size: 16px; font-weight: 800; color: #34d399; margin-bottom: 10px; }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .modal-title { font-size: 16px; font-weight: 800; color: #34d399; }
+    .modal-x { background: none; border: none; color: #94a3b8; font-size: 22px; cursor: pointer; }
+    .m-field { margin-bottom: 10px; }
+    .m-field label { display: block; font-size: 11px; color: #94a3b8; margin-bottom: 4px; font-weight: 700; }
+    .m-field input, .m-field select, .m-field textarea {
+      width: 100%; background: #0f172a; color: #f8fafc; border: 1px solid #334155;
+      border-radius: 9px; padding: 8px 10px; font-size: 13px;
+    }
+    .m-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .m-btn-green {
+      width: 100%; background: #10b981; color: #052e16; border: none; border-radius: 10px;
+      padding: 11px; font-weight: 900; font-size: 13px; cursor: pointer; margin-top: 4px;
+    }
+    .m-btn-call {
+      display: block; width: 100%; text-align: center; text-decoration: none;
+      background: #064e3b; color: #6ee7b7; border: 1px solid #10b981; border-radius: 10px;
+      padding: 11px; font-weight: 800; font-size: 13px; margin-top: 8px;
+    }
+    .m-btn-wa {
+      display: block; width: 100%; text-align: center; text-decoration: none;
+      background: #1e293b; color: #f8fafc; border: 1px solid #475569; border-radius: 10px;
+      padding: 10px; font-weight: 800; font-size: 12px; margin-top: 8px;
+    }
+    .res-status-box {
+      margin-top: 10px; background: #0f172a; border: 1px solid #1e293b; border-radius: 10px;
+      padding: 9px 11px; font-size: 12px; color: #34d399; display: none; line-height: 1.45;
+    }
+
     .inv-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #1f2937; font-size: 13px; }
     .inv-total { display: flex; justify-content: space-between; padding-top: 10px; font-size: 16px; font-weight: 800; color: #10b981; }
     .inv-close {
@@ -118,7 +158,8 @@
   <header class="topbar">
     <div class="brand">Mombasa Ride</div>
     <div class="topbar-right">
-      <a href="tel:0700246976" class="direct-call-target top-call-btn">📞 Call to Book</a>
+      <button type="button" class="top-res-btn" onclick="openReserveModal()">Reserve</button>
+      <a href="tel:0700246976" class="top-call-btn">📞 0700246976</a>
       <div class="conn-pill">
         <span class="dot" id="conn-dot"></span>
         <span id="conn-label">Connecting...</span>
@@ -157,28 +198,27 @@
         <input type="text" id="rider-phone" placeholder="+2547..." />
       </div>
       <div class="field">
-        <label for="pickup-point">Pickup</label>
-        <select id="pickup-point" onchange="updateFareEstimate()">
-          <option value="Current Mombasa Location">Current Mombasa Location</option>
-          <option value="Nyali Bridge">Nyali Bridge</option>
-          <option value="Moi International Airport (MBA)">Moi International Airport (MBA)</option>
-          <option value="SGR Miritini">SGR Miritini</option>
-          <option value="Likoni Ferry">Likoni Ferry</option>
-          <option value="Mombasa CBD">Mombasa CBD</option>
-        </select>
+        <label for="pickup-point">Pickup (Type or Pick)</label>
+        <input type="text" id="pickup-point" list="mombasa-locations" value="Current Mombasa Location" placeholder="Type pickup in Mombasa..." oninput="updateFareEstimate()" />
       </div>
       <div class="field">
-        <label for="dropoff-point">Drop-off</label>
-        <select id="dropoff-point" onchange="updateFareEstimate()">
-          <option value="Mombasa CBD">Mombasa CBD</option>
-          <option value="Nyali Bridge">Nyali Bridge</option>
-          <option value="Moi International Airport (MBA)">Moi International Airport (MBA)</option>
-          <option value="SGR Miritini">SGR Miritini</option>
-          <option value="Likoni Ferry">Likoni Ferry</option>
-          <option value="Bamburi / Shanzu">Bamburi / Shanzu</option>
-        </select>
+        <label for="dropoff-point">Drop-off (Type or Pick)</label>
+        <input type="text" id="dropoff-point" list="mombasa-locations" value="Mombasa CBD" placeholder="Type drop-off in Mombasa..." oninput="updateFareEstimate()" />
       </div>
     </div>
+
+    <datalist id="mombasa-locations">
+      <option value="Current Mombasa Location"></option>
+      <option value="Mombasa CBD"></option>
+      <option value="Nyali Bridge"></option>
+      <option value="Nyali Centre / City Mall"></option>
+      <option value="Moi International Airport (MBA)"></option>
+      <option value="SGR Miritini"></option>
+      <option value="Likoni Ferry"></option>
+      <option value="Bamburi / Shanzu"></option>
+      <option value="Kongowea Market"></option>
+      <option value="Tudor"></option>
+    </datalist>
 
     <div class="cat-grid">
       <button type="button" class="cat-btn" data-cat="Boda" onclick="pickCategory('Boda')">
@@ -219,20 +259,89 @@
       <button type="button" class="book-btn" id="btn-book-ride" onclick="sendRideRequest()">
         Request Ride
       </button>
-      <a href="tel:0700246976" class="direct-call-target call-direct-btn">
-        📞 Call 0700246976
-      </a>
+      <button type="button" class="reserve-btn" onclick="openReserveModal()">
+        📅 Reserve / Direct
+      </button>
     </div>
 
     <div class="reserve-note">
-      <strong>First booking or reserving a ride?</strong> Call <strong>0700246976</strong> directly to book or reserve with Benard.
+      <span><strong>First booking or reserving?</strong> Book a reservation or call <strong>0700246976</strong> directly.</span>
+      <a href="tel:0700246976" class="inline-call-link">📞 Call Now</a>
     </div>
     <div class="hint-line" id="hint-line"></div>
   </section>
 
-  <div id="invoice-modal">
-    <div class="inv-card">
-      <div class="inv-title">Trip Completed • Receipt</div>
+  <!-- Direct Booking & Ride Reservation Modal -->
+  <div class="overlay-modal" id="reserve-modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title">Direct Booking & Reservation</div>
+        <button type="button" class="modal-x" onclick="closeReserveModal()">×</button>
+      </div>
+
+      <div class="m-two">
+        <div class="m-field">
+          <label for="res-name">Your Name</label>
+          <input type="text" id="res-name" value="Guest Rider" />
+        </div>
+        <div class="m-field">
+          <label for="res-phone">Your Phone</label>
+          <input type="text" id="res-phone" placeholder="07..." />
+        </div>
+      </div>
+
+      <div class="m-field">
+        <label for="res-pickup">Pickup Location</label>
+        <input type="text" id="res-pickup" list="mombasa-locations" placeholder="Enter pickup point..." />
+      </div>
+
+      <div class="m-field">
+        <label for="res-dropoff">Drop-off Location</label>
+        <input type="text" id="res-dropoff" list="mombasa-locations" placeholder="Enter drop-off point..." />
+      </div>
+
+      <div class="m-two">
+        <div class="m-field">
+          <label for="res-date">Date (Blank = Immediate)</label>
+          <input type="date" id="res-date" />
+        </div>
+        <div class="m-field">
+          <label for="res-time">Time (Blank = Now)</label>
+          <input type="time" id="res-time" />
+        </div>
+      </div>
+
+      <div class="m-field">
+        <label for="res-cat">Category</label>
+        <select id="res-cat">
+          <option value="Boda">Boda</option>
+          <option value="Tukutuku">Tukutuku</option>
+          <option value="Standard" selected>Standard</option>
+          <option value="Comfort">Comfort</option>
+          <option value="XL">XL</option>
+          <option value="VIP Class">VIP Class</option>
+        </select>
+      </div>
+
+      <div class="m-field">
+        <label for="res-notes">Trip / Flight / Reservation Notes</label>
+        <textarea id="res-notes" rows="2" placeholder="First-time booking, luggage, flight arrival..."></textarea>
+      </div>
+
+      <button type="button" class="m-btn-green" onclick="submitReservationBooking()">
+        Confirm Direct / Reservation Request
+      </button>
+      <a href="tel:0700246976" class="m-btn-call">📞 Call Direct: 0700246976</a>
+      <a href="#" id="res-wa-link" target="_blank" rel="noopener" class="m-btn-wa">💬 Send Booking via WhatsApp (0700246976)</a>
+
+      <div class="res-status-box" id="res-status-box"></div>
+    </div>
+  </div>
+
+  <!-- Receipt Modal -->
+  <div class="overlay-modal" id="invoice-modal">
+    <div class="modal-card">
+      <div class="modal-title" style="margin-bottom:10px;">Trip Completed • Receipt</div>
       <div id="inv-lines"></div>
       <button type="button" class="inv-close" onclick="closeInvoice()">Done</button>
     </div>
@@ -242,12 +351,9 @@
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     const SERVER_URL = 'https://mombasa-ride-server.onrender.com';
-    const DIRECT_BOOKING_PHONE = '0700246976';
+    const DIRECT_PHONE = '0700246976';
+    const WHATSAPP_INTL_PHONE = '254700246976';
     const MOMBASA_DEFAULT = { lat: -4.0435, lng: 39.6682 };
-
-    document.querySelectorAll('.direct-call-target').forEach((el) => {
-      el.href = `tel:${DIRECT_BOOKING_PHONE}`;
-    });
 
     const TARIFFS = {
       'Boda': { baseFare: 60, perKm: 25, minFare: 150 },
@@ -260,11 +366,14 @@
 
     const HUB_ZONES = {
       'Nyali Bridge': { km: 3.4, surge: 1.4, note: 'Nyali Bridge 1.4x surge' },
+      'Nyali Centre / City Mall': { km: 4.5, surge: 1.2, note: 'Nyali 1.2x surge' },
       'Moi International Airport (MBA)': { km: 9.5, surge: 1.3, note: 'MBA Airport 1.3x surge' },
       'SGR Miritini': { km: 14.0, surge: 1.5, note: 'SGR Miritini 1.5x surge' },
       'Likoni Ferry': { km: 5.2, surge: 1.2, note: 'Likoni Ferry 1.2x surge' },
       'Mombasa CBD': { km: 2.2, surge: 1.0, note: 'Mombasa CBD standard fare' },
-      'Bamburi / Shanzu': { km: 11.5, surge: 1.2, note: 'North Coast 1.2x surge' }
+      'Bamburi / Shanzu': { km: 11.5, surge: 1.2, note: 'North Coast 1.2x surge' },
+      'Kongowea Market': { km: 3.8, surge: 1.1, note: 'Kongowea 1.1x surge' },
+      'Tudor': { km: 2.8, surge: 1.0, note: 'Tudor standard fare' }
     };
 
     let selectedCategory = 'Standard';
@@ -315,21 +424,30 @@
       document.querySelectorAll('.cat-btn').forEach((btn) => {
         btn.classList.toggle('active', btn.dataset.cat === cat);
       });
+      document.getElementById('res-cat').value = cat;
       updateFareEstimate();
     }
 
+    function matchZone(text) {
+      const clean = String(text || '').trim().toLowerCase();
+      if (!clean) return null;
+      if (HUB_ZONES[text]) return HUB_ZONES[text];
+      const foundKey = Object.keys(HUB_ZONES).find((k) => clean.includes(k.toLowerCase()) || k.toLowerCase().includes(clean));
+      return foundKey ? HUB_ZONES[foundKey] : null;
+    }
+
     function updateFareEstimate() {
-      const pickup = document.getElementById('pickup-point').value;
-      const dropoff = document.getElementById('dropoff-point').value;
-      const zone = HUB_ZONES[dropoff] || HUB_ZONES[pickup] || { km: 2.5, surge: 1.0, note: 'Mombasa standard fare' };
-      const tariff = TARIFFS[selectedCategory];
+      const pickup = document.getElementById('pickup-point').value.trim() || 'Current Mombasa Location';
+      const dropoff = document.getElementById('dropoff-point').value.trim() || 'Mombasa CBD';
+      const zone = matchZone(dropoff) || matchZone(pickup) || { km: 2.8, surge: 1.0, note: 'Custom Mombasa route estimate' };
+      const tariff = TARIFFS[selectedCategory] || TARIFFS.Standard;
 
       const raw = Math.round((tariff.baseFare + zone.km * tariff.perKm) * zone.surge);
       quoteFare = Math.max(tariff.minFare, raw);
       quoteSurge = zone.surge;
 
       document.getElementById('est-cat').textContent = selectedCategory;
-      document.getElementById('est-meta').textContent = `~${zone.km.toFixed(1)} km • ${zone.note}`;
+      document.getElementById('est-meta').textContent = `${pickup} → ${dropoff} • ~${zone.km.toFixed(1)} km`;
       document.getElementById('est-price').textContent = `KES ${quoteFare.toLocaleString()}`;
     }
 
@@ -513,7 +631,7 @@
           (inv.surgeMultiplier > 1 ? `<div class="inv-row"><span>Surge</span><span>${inv.surgeMultiplier}x</span></div>` : '') +
           `<div class="inv-total"><span>Total Amount</span><span>KES ${total.toLocaleString()}</span></div>`;
 
-        document.getElementById('invoice-modal').style.display = 'flex';
+        document.getElementById('invoice-modal').classList.add('open');
       });
 
       socket.on('ride_cancelled_by_driver', (data = {}) => {
@@ -529,8 +647,8 @@
     function sendRideRequest() {
       const passengerName = document.getElementById('rider-name').value.trim() || 'Guest Rider';
       const passengerPhone = document.getElementById('rider-phone').value.trim();
-      const pickup = document.getElementById('pickup-point').value;
-      const dropoff = document.getElementById('dropoff-point').value;
+      const pickup = document.getElementById('pickup-point').value.trim() || 'Current Mombasa Location';
+      const dropoff = document.getElementById('dropoff-point').value.trim() || 'Mombasa CBD';
 
       activeRideId = `RIDE-${Date.now()}`;
       document.getElementById('btn-book-ride').disabled = true;
@@ -563,6 +681,104 @@
       }
     }
 
+    function openReserveModal() {
+      document.getElementById('res-name').value = document.getElementById('rider-name').value.trim() || 'Guest Rider';
+      document.getElementById('res-phone').value = document.getElementById('rider-phone').value.trim();
+      document.getElementById('res-pickup').value = document.getElementById('pickup-point').value.trim();
+      document.getElementById('res-dropoff').value = document.getElementById('dropoff-point').value.trim();
+      document.getElementById('res-cat').value = selectedCategory;
+      document.getElementById('res-status-box').style.display = 'none';
+      refreshWhatsAppReservationLink();
+      document.getElementById('reserve-modal').classList.add('open');
+    }
+
+    function closeReserveModal() {
+      document.getElementById('reserve-modal').classList.remove('open');
+    }
+
+    function buildReservationSummary() {
+      const name = document.getElementById('res-name').value.trim() || 'Guest Rider';
+      const phone = document.getElementById('res-phone').value.trim() || 'Not provided';
+      const pickup = document.getElementById('res-pickup').value.trim() || 'Current Mombasa Location';
+      const dropoff = document.getElementById('res-dropoff').value.trim() || 'Mombasa CBD';
+      const dateVal = document.getElementById('res-date').value;
+      const timeVal = document.getElementById('res-time').value;
+      const cat = document.getElementById('res-cat').value || selectedCategory;
+      const notes = document.getElementById('res-notes').value.trim();
+      const bookingType = (dateVal || timeVal) ? 'Reservation' : 'Direct Booking';
+      const whenLabel = (dateVal || timeVal) ? `${dateVal || 'Today'} at ${timeVal || 'ASAP'}` : 'Immediate / Direct';
+
+      return { name, phone, pickup, dropoff, dateVal, timeVal, cat, notes, bookingType, whenLabel };
+    }
+
+    function refreshWhatsAppReservationLink() {
+      const info = buildReservationSummary();
+      const text = encodeURIComponent(
+        `Mombasa Ride ${info.bookingType}:\n` +
+        `Name: ${info.name}\nPhone: ${info.phone}\n` +
+        `Pickup: ${info.pickup}\nDrop-off: ${info.dropoff}\n` +
+        `Category: ${info.cat}\nWhen: ${info.whenLabel}` +
+        (info.notes ? `\nNotes: ${info.notes}` : '')
+      );
+      document.getElementById('res-wa-link').href = `https://wa.me/${WHATSAPP_INTL_PHONE}?text=${text}`;
+    }
+
+    ['res-name', 'res-phone', 'res-pickup', 'res-dropoff', 'res-date', 'res-time', 'res-cat', 'res-notes'].forEach((id) => {
+      document.getElementById(id).addEventListener('input', refreshWhatsAppReservationLink);
+      document.getElementById(id).addEventListener('change', refreshWhatsAppReservationLink);
+    });
+
+    function submitReservationBooking() {
+      const info = buildReservationSummary();
+      refreshWhatsAppReservationLink();
+
+      if (info.pickup) document.getElementById('pickup-point').value = info.pickup;
+      if (info.dropoff) document.getElementById('dropoff-point').value = info.dropoff;
+      if (info.phone) document.getElementById('rider-phone').value = info.phone;
+      pickCategory(info.cat);
+
+      const bookingId = `RES-${Date.now()}`;
+      const payload = {
+        rideId: bookingId,
+        bookingType: info.bookingType,
+        isReservation: Boolean(info.dateVal || info.timeVal),
+        scheduledDate: info.dateVal || null,
+        scheduledTime: info.timeVal || null,
+        whenLabel: info.whenLabel,
+        passengerName: info.name,
+        passengerPhone: info.phone,
+        directLine: DIRECT_PHONE,
+        vehicleClass: info.cat,
+        pickup: info.pickup,
+        dropoff: info.dropoff,
+        notes: info.notes,
+        fare: quoteFare,
+        coords: riderCoords,
+        lat: riderCoords.lat,
+        lng: riderCoords.lng
+      };
+
+      if (socket && socket.connected) {
+        socket.emit('reserve_ride', payload);
+        socket.emit('request_ride', payload);
+      }
+
+      const box = document.getElementById('res-status-box');
+      box.style.display = 'block';
+      box.innerHTML =
+        `<strong>${info.bookingType} Logged (#${bookingId.slice(-5)})</strong><br/>` +
+        `${info.pickup} → ${info.dropoff} (${info.whenLabel})<br/>` +
+        `Direct line: <strong>${DIRECT_PHONE}</strong>`;
+
+      showBanner(
+        info.bookingType,
+        `${info.bookingType} logged for ${info.whenLabel}`,
+        `${info.pickup} → ${info.dropoff} • Direct line: ${DIRECT_PHONE}`,
+        '',
+        false
+      );
+    }
+
     function cancelRideRequest() {
       if (socket && socket.connected && activeRideId) {
         socket.emit('ride_cancelled_by_client', {
@@ -579,7 +795,7 @@
     }
 
     function closeInvoice() {
-      document.getElementById('invoice-modal').style.display = 'none';
+      document.getElementById('invoice-modal').classList.remove('open');
     }
 
     updateFareEstimate();
