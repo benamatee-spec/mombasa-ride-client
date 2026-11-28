@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Mombasa Rider App</title>
+  <title>Mombasa Ride • Client</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
@@ -31,20 +31,28 @@
 
     #map { flex: 1; width: 100%; background: #e2e8f0; z-index: 1; }
 
+    /* Live Trip Banner + Call Fallback */
     #trip-banner {
       display: none; position: fixed; top: 54px; left: 12px; right: 12px; z-index: 9500;
       background: #111827; border: 1.5px solid #10b981; border-radius: 14px;
       padding: 12px 14px; box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
     }
+    #trip-banner.fallback { border-color: #f59e0b; }
     .tb-stage { font-size: 11px; font-weight: 800; color: #34d399; text-transform: uppercase; letter-spacing: 0.04em; }
+    #trip-banner.fallback .tb-stage { color: #fbbf24; }
     .tb-title { font-size: 14px; font-weight: 800; color: #ffffff; margin-top: 3px; }
     .tb-sub { font-size: 12px; color: #cbd5e1; margin-top: 4px; line-height: 1.4; }
     .tb-meter { font-size: 12px; font-weight: 800; color: #38bdf8; margin-top: 5px; }
     .tb-wait { display: none; font-size: 12px; font-weight: 700; color: #fbbf24; margin-top: 5px; }
-    .tb-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .tb-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .tb-cancel {
       background: #ef4444; color: #fff; border: none; border-radius: 8px;
-      padding: 6px 12px; font-size: 11px; font-weight: 700; cursor: pointer;
+      padding: 7px 12px; font-size: 11px; font-weight: 800; cursor: pointer;
+    }
+    .tb-call-fallback {
+      background: #064e3b; color: #6ee7b7; border: 1px solid #10b981; border-radius: 8px;
+      padding: 7px 12px; font-size: 11px; font-weight: 800; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 4px;
     }
 
     .sheet {
@@ -91,8 +99,7 @@
     .book-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .reserve-btn {
       width: 100%; background: #1e293b; color: #f8fafc; border: 1.5px solid #10b981;
-      border-radius: 12px; padding: 12px 10px; font-size: 13px; font-weight: 800;
-      cursor: pointer;
+      border-radius: 12px; padding: 12px 10px; font-size: 13px; font-weight: 800; cursor: pointer;
     }
 
     .reserve-note {
@@ -107,7 +114,6 @@
     }
     .hint-line { margin-top: 6px; font-size: 12px; color: #94a3b8; min-height: 16px; }
 
-    /* Reservation / Direct Booking Modal */
     .overlay-modal {
       display: none; position: fixed; inset: 0; z-index: 99999;
       background: rgba(2, 6, 23, 0.88); align-items: center; justify-content: center; padding: 16px;
@@ -173,8 +179,9 @@
     <div class="tb-sub" id="tb-sub"></div>
     <div class="tb-meter" id="tb-meter"></div>
     <div class="tb-wait" id="tb-wait">Driver waiting: <span id="tb-wait-clock">00:00</span></div>
-    <div class="tb-actions" id="tb-actions" style="display:none;">
-      <button type="button" class="tb-cancel" onclick="cancelRideRequest()">Cancel Ride</button>
+    <div class="tb-actions" id="tb-actions">
+      <a href="tel:0700246976" class="tb-call-fallback" id="tb-call-btn">📞 Call 0700246976</a>
+      <button type="button" class="tb-cancel" id="tb-cancel-btn" onclick="cancelRideRequest()">Cancel Ride</button>
     </div>
   </div>
 
@@ -265,7 +272,7 @@
     </div>
 
     <div class="reserve-note">
-      <span><strong>First booking or reserving?</strong> Book a reservation or call <strong>0700246976</strong> directly.</span>
+      <span><strong>First booking or reserving?</strong> Book or call <strong>0700246976</strong> anytime.</span>
       <a href="tel:0700246976" class="inline-call-link">📞 Call Now</a>
     </div>
     <div class="hint-line" id="hint-line"></div>
@@ -385,14 +392,14 @@
     let driverMarker = null;
     let waitTimer = null;
     let waitSeconds = 0;
+    let requestRetryTimer = null;
 
     let map = null;
     try {
       if (typeof L !== 'undefined') {
         map = L.map('map', { zoomControl: true }).setView([riderCoords.lat, riderCoords.lng], 13);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-          maxZoom: 19,
-          attribution: 'Tiles &copy; Esri'
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19
         }).addTo(map);
 
         riderMarker = L.circleMarker([riderCoords.lat, riderCoords.lng], {
@@ -458,15 +465,16 @@
       return `${mins}:${rem}`;
     }
 
-    function showBanner(stage, title, sub = '', meter = '', canCancel = false) {
+    function showBanner(stage, title, sub = '', meter = '', canCancel = false, isFallback = false) {
       const banner = document.getElementById('trip-banner');
       if (!banner) return;
       banner.style.display = 'block';
+      banner.classList.toggle('fallback', Boolean(isFallback));
       document.getElementById('tb-stage').textContent = stage;
       document.getElementById('tb-title').textContent = title;
       document.getElementById('tb-sub').textContent = sub;
       document.getElementById('tb-meter').textContent = meter;
-      document.getElementById('tb-actions').style.display = canCancel ? 'flex' : 'none';
+      document.getElementById('tb-cancel-btn').style.display = canCancel ? 'inline-block' : 'none';
     }
 
     function startWaitCounter() {
@@ -491,6 +499,13 @@
       if (box) box.style.display = 'none';
     }
 
+    function clearRetryTimer() {
+      if (requestRetryTimer) {
+        clearTimeout(requestRetryTimer);
+        requestRetryTimer = null;
+      }
+    }
+
     function updateDriverMarker(lat, lng, label) {
       if (!map || typeof L === 'undefined') return;
       if (typeof lat !== 'number' || typeof lng !== 'number') return;
@@ -506,7 +521,8 @@
 
     function matchesActiveTrip(payload) {
       if (!activeRideId || !payload || !payload.rideId) return true;
-      return payload.rideId === activeRideId;
+      if (payload.rideId === activeRideId) return true;
+      return !document.getElementById('tb-title').textContent.includes('Plate:');
     }
 
     const socket = typeof io !== 'undefined'
@@ -522,46 +538,66 @@
       socket.on('disconnect', () => {
         document.getElementById('conn-dot').classList.remove('ok');
         document.getElementById('conn-label').textContent = 'Reconnecting...';
+        if (activeRideId) {
+          document.getElementById('btn-book-ride').disabled = false;
+          showBanner(
+            'Connection Interrupted',
+            'Dispatch server unavailable — call directly',
+            `Tap Call ${DIRECT_PHONE} to book your ride immediately.`,
+            '',
+            false,
+            true
+          );
+        }
       });
 
       socket.on('ride_accepted', (data = {}) => {
         if (!matchesActiveTrip(data)) return;
+        clearRetryTimer();
         if (data.rideId) activeRideId = data.rideId;
 
-        const driverName = data.driverName || 'Your Driver';
-        const plate = data.plate || '';
+        const driverName = data.driverName || data.name || 'Benard';
+        const plate = data.plate || 'KDS 396K';
         const vehicle = data.carModel || data.vehicleClass || selectedCategory;
+        const phone = data.driverPhone || data.phone || DIRECT_PHONE;
 
+        document.getElementById('tb-call-btn').href = `tel:${phone}`;
+        document.getElementById('tb-call-btn').textContent = `📞 Call ${phone}`;
         document.getElementById('hint-line').textContent = `Ride accepted by ${driverName}`;
+
         showBanner(
           'Ride Accepted',
-          `Ride accepted by ${driverName}`,
-          `${vehicle}${plate ? ` • Plate: ${plate}` : ''}${data.driverPhone ? ` • ${data.driverPhone}` : ''}`,
+          `Accepted by ${driverName} • Plate: ${plate}`,
+          `${vehicle} • Direct Call: ${phone}`,
           '',
-          true
+          true,
+          false
         );
 
-        if (typeof data.lat === 'number' && typeof data.lng === 'number') {
-          updateDriverMarker(data.lat, data.lng, `${driverName} (${plate})`);
+        const lat = Number(data.lat ?? (data.location && data.location.lat));
+        const lng = Number(data.lng ?? (data.location && data.location.lng));
+        if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+          updateDriverMarker(lat, lng, `${driverName} (${plate})`);
         }
       });
 
       socket.on('driver_location_update', (data = {}) => {
         if (!matchesActiveTrip(data)) return;
-        const lat = typeof data.lat === 'number' ? data.lat : (data.coords && data.coords.lat);
-        const lng = typeof data.lng === 'number' ? data.lng : (data.coords && data.coords.lng);
+        const lat = Number(data.lat ?? (data.coords && data.coords.lat) ?? (data.location && data.location.lat));
+        const lng = Number(data.lng ?? (data.coords && data.coords.lng) ?? (data.location && data.location.lng));
 
-        if (typeof lat === 'number' && typeof lng === 'number') {
-          updateDriverMarker(lat, lng, `${data.driverName || 'Driver'} (${data.plate || ''})`);
+        if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+          updateDriverMarker(lat, lng, `${data.driverName || 'Benard'} (${data.plate || 'KDS 396K'})`);
         }
 
         if (data.stage === 'going_to_pickup') {
           showBanner(
             'Driver En Route',
-            `${data.driverName || 'Your driver'} is moving to pickup`,
+            `${data.driverName || 'Benard'} is heading to pickup`,
             `${data.vehicleClass || selectedCategory}${data.plate ? ` • ${data.plate}` : ''}`,
             '',
-            true
+            true,
+            false
           );
         } else if (data.stage === 'in_progress') {
           const meterText = typeof data.runningFare === 'number'
@@ -569,9 +605,10 @@
             : '';
           showBanner(
             'Trip In Progress',
-            `Heading to destination with ${data.driverName || 'your driver'}`,
+            `Heading to destination with ${data.driverName || 'Benard'}`,
             `${data.vehicleClass || selectedCategory}${data.plate ? ` • ${data.plate}` : ''}`,
             meterText,
+            false,
             false
           );
         }
@@ -584,9 +621,10 @@
         showBanner(
           'Driver Arrived',
           data.message || 'Your driver arrived!',
-          `${data.driverName || 'Driver'}${data.plate ? ` • Plate: ${data.plate}` : ''} is waiting at pickup`,
+          `${data.driverName || 'Benard'}${data.plate ? ` • Plate: ${data.plate}` : ''} is waiting at pickup`,
           '',
-          true
+          true,
+          false
         );
       });
 
@@ -597,14 +635,16 @@
         showBanner(
           'Trip Started',
           data.message || 'Trip has started!',
-          `Enjoy your ride with ${data.driverName || 'your driver'}`,
+          `Enjoy your ride with ${data.driverName || 'Benard'}`,
           '',
+          false,
           false
         );
       });
 
       socket.on('trip_completed', (data = {}) => {
         if (!matchesActiveTrip(data)) return;
+        clearRetryTimer();
         stopWaitCounter();
         activeRideId = null;
         document.getElementById('btn-book-ride').disabled = false;
@@ -618,11 +658,12 @@
           `Trip ended • Total: KES ${total.toLocaleString()}`,
           `${data.pickup || 'Pickup'} → ${data.dropoff || 'Drop-off'}`,
           '',
+          false,
           false
         );
 
         document.getElementById('inv-lines').innerHTML =
-          `<div class="inv-row"><span>Driver</span><strong>${data.driverName || 'Driver'} (${data.plate || ''})</strong></div>` +
+          `<div class="inv-row"><span>Driver</span><strong>${data.driverName || 'Benard'} (${data.plate || 'KDS 396K'})</strong></div>` +
           `<div class="inv-row"><span>Category</span><span>${inv.category || data.carModel || selectedCategory}</span></div>` +
           `<div class="inv-row"><span>Base Fare</span><span>KES ${inv.baseFare ?? 0}</span></div>` +
           `<div class="inv-row"><span>Distance (${(inv.distanceKm ?? 0).toFixed(2)} km)</span><span>KES ${inv.distanceCharge ?? 0}</span></div>` +
@@ -636,11 +677,19 @@
 
       socket.on('ride_cancelled_by_driver', (data = {}) => {
         if (!matchesActiveTrip(data)) return;
+        clearRetryTimer();
         stopWaitCounter();
         activeRideId = null;
         document.getElementById('btn-book-ride').disabled = false;
-        document.getElementById('hint-line').textContent = 'Ride request cancelled.';
-        showBanner('Ride Cancelled', data.reason || 'Driver cancelled the trip.', 'Tap Request Ride whenever you are ready.');
+        document.getElementById('hint-line').textContent = 'Trip cancelled — call directly if needed.';
+        showBanner(
+          'Ride Cancelled',
+          data.reason || 'Driver cancelled the trip.',
+          `Call ${DIRECT_PHONE} to rebook directly or tap Request Ride.`,
+          '',
+          false,
+          true
+        );
       });
     }
 
@@ -650,35 +699,63 @@
       const pickup = document.getElementById('pickup-point').value.trim() || 'Current Mombasa Location';
       const dropoff = document.getElementById('dropoff-point').value.trim() || 'Mombasa CBD';
 
+      clearRetryTimer();
       activeRideId = `RIDE-${Date.now()}`;
       document.getElementById('btn-book-ride').disabled = true;
       document.getElementById('hint-line').textContent = `Sending ${selectedCategory} request...`;
+
+      if (!socket || !socket.connected) {
+        document.getElementById('btn-book-ride').disabled = false;
+        document.getElementById('hint-line').textContent = `No server connection — call ${DIRECT_PHONE} directly.`;
+        showBanner(
+          'Direct Booking Fallback',
+          `Cannot reach dispatch server — call ${DIRECT_PHONE}`,
+          `${pickup} → ${dropoff} • Est. KES ${quoteFare.toLocaleString()}`,
+          '',
+          false,
+          true
+        );
+        return;
+      }
 
       showBanner(
         'Request Sent',
         `Searching for ${selectedCategory} driver...`,
         `${pickup} → ${dropoff} • Est. KES ${quoteFare.toLocaleString()}`,
         '',
-        true
+        true,
+        false
       );
 
-      if (socket && socket.connected) {
-        socket.emit('request_ride', {
-          rideId: activeRideId,
-          passengerName,
-          passengerPhone,
-          vehicleClass: selectedCategory,
-          pickup,
-          dropoff,
-          fare: quoteFare,
-          surgeMultiplier: quoteSurge,
-          coords: riderCoords,
-          lat: riderCoords.lat,
-          lng: riderCoords.lng
-        });
-      } else {
-        document.getElementById('hint-line').textContent = 'Waiting for Render server connection...';
-      }
+      socket.emit('request_ride', {
+        rideId: activeRideId,
+        passengerName,
+        passengerPhone,
+        vehicleClass: selectedCategory,
+        pickup,
+        dropoff,
+        fare: quoteFare,
+        surgeMultiplier: quoteSurge,
+        coords: riderCoords,
+        lat: riderCoords.lat,
+        lng: riderCoords.lng
+      });
+
+      requestRetryTimer = setTimeout(() => {
+        if (!activeRideId) return;
+        const currentTitle = document.getElementById('tb-title').textContent;
+        if (!currentTitle.includes('Accepted by')) {
+          document.getElementById('btn-book-ride').disabled = false;
+          showBanner(
+            'Need Fast Dispatch?',
+            `No instant response yet — call ${DIRECT_PHONE}`,
+            `Tap Call ${DIRECT_PHONE} to book immediately or keep waiting.`,
+            '',
+            true,
+            true
+          );
+        }
+      }, 15000);
     }
 
     function openReserveModal() {
@@ -773,13 +850,15 @@
       showBanner(
         info.bookingType,
         `${info.bookingType} logged for ${info.whenLabel}`,
-        `${info.pickup} → ${info.dropoff} • Direct line: ${DIRECT_PHONE}`,
+        `${info.pickup} → ${info.dropoff} • Call ${DIRECT_PHONE} to confirm`,
         '',
+        false,
         false
       );
     }
 
     function cancelRideRequest() {
+      clearRetryTimer();
       if (socket && socket.connected && activeRideId) {
         socket.emit('ride_cancelled_by_client', {
           rideId: activeRideId,
@@ -789,9 +868,15 @@
       stopWaitCounter();
       activeRideId = null;
       document.getElementById('btn-book-ride').disabled = false;
-      document.getElementById('tb-actions').style.display = 'none';
       document.getElementById('hint-line').textContent = 'Ride request cancelled.';
-      showBanner('Request Cancelled', 'You cancelled the ride request.', 'Select a category and tap Request Ride anytime.');
+      showBanner(
+        'Request Cancelled',
+        'You cancelled the ride request.',
+        `Tap Request Ride or call ${DIRECT_PHONE} anytime.`,
+        '',
+        false,
+        true
+      );
     }
 
     function closeInvoice() {
